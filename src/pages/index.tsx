@@ -19,7 +19,9 @@ export default function Home() {
         canvas.height = mapImg.height
 
         context.translate(translatePosition.x, translatePosition.y)
-        context.drawImage(mapImg, 0, 0, scale, scale, 0, 0, mapImg.width, mapImg.height)
+        context.scale(scale, scale)
+        context.drawImage(mapImg, 0, 0, mapImg.width, mapImg.height)
+        context.restore()
       }
     }
 
@@ -28,20 +30,20 @@ export default function Home() {
       y: canvas.height / 2,
     }
 
-    let scale = 2000 // TODO: Find responsive scale
+    let scale = 1 // TODO: Find responsive scale
     const scaleMultiplier = 0.8
     let startDragOffset= { x: 0, y: 0 }
     let mouseDown = false
 
     // Button event listener: zoom in and zoom out
     buttonPlus.addEventListener('click', () => {
-      scale *= scaleMultiplier
+      scale /= scaleMultiplier
 
       draw(scale, translatePosition)
     }, false)
 
     buttonMinus.addEventListener('click', () => {
-      scale /= scaleMultiplier
+      scale *= scaleMultiplier
 
       draw(scale, translatePosition)
     }, false)
