@@ -5,43 +5,78 @@ import styles from '../styles/Home.module.css'
 
 export default function Home() {
   useEffect(() => {
-    function draw(scale: number): void {
-      var canvas = document.getElementById('canvas') as HTMLCanvasElement
-      var context = canvas.getContext('2d') as CanvasRenderingContext2D
-  
+    const canvas = document.getElementById('canvas') as HTMLCanvasElement
+    const context = canvas.getContext('2d') as CanvasRenderingContext2D
+    const buttonPlus = document.getElementById('plus') as HTMLButtonElement
+    const buttonMinus = document.getElementById('minus') as HTMLButtonElement
+
+    function draw(scale: number, translatePosition: { x: number, y: number }): void {
       const mapImg = new Image()
       mapImg.src = './aceno.png'
-
+      
       mapImg.onload = () => {
         canvas.width = mapImg.width
         canvas.height = mapImg.height
 
+        context.translate(translatePosition.x, translatePosition.y)
         context.drawImage(mapImg, 0, 0, scale, scale, 0, 0, mapImg.width, mapImg.height)
       }
-
-      context.clearRect(0, 0, canvas.width, canvas.height)
-      context.fillStyle = '#000'
-      context.fillRect(0, 0, canvas.width, canvas.height)
     }
 
-    var scale = 1024
-    var scaleMultiplier = 0.8
+    const translatePosition = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+    }
 
-    const buttonPlus = document.getElementById('plus') as HTMLButtonElement
-    buttonPlus.addEventListener('click', function() {
+    let scale = 2000 // TODO: Find responsive scale
+    const scaleMultiplier = 0.8
+    let startDragOffset= { x: 0, y: 0 }
+    let mouseDown = false
+
+    // Button event listener: zoom in and zoom out
+    buttonPlus.addEventListener('click', () => {
       scale *= scaleMultiplier
 
-      draw(scale)
+      draw(scale, translatePosition)
     }, false)
 
-    const buttonMinus = document.getElementById('minus') as HTMLButtonElement
-    buttonMinus.addEventListener('click', function() {
+    buttonMinus.addEventListener('click', () => {
       scale /= scaleMultiplier
 
-      draw(scale)
+      draw(scale, translatePosition)
     }, false)
 
-    draw(scale)
+    // TODO: Scroll event listener: zoom in and zoom out
+
+    // Mouse event listener: dragging
+    canvas.addEventListener('mousedown', (event) => {
+      mouseDown = true
+      startDragOffset.x = event.clientX - translatePosition.x
+      startDragOffset.y = event.clientY - translatePosition.y
+    })
+
+    canvas.addEventListener('mouseup', () => {
+      mouseDown = false
+    })
+
+    canvas.addEventListener('mouseover', () => {
+      mouseDown = false
+    })
+
+    canvas.addEventListener('mouseout', () => {
+      mouseDown = false
+    
+    })
+    
+    canvas.addEventListener('mousemove', (event) => {
+      if(mouseDown) {
+        translatePosition.x = event.clientX - startDragOffset.x
+        translatePosition.y = event.clientY - startDragOffset.y
+        draw(scale, translatePosition)
+      }
+    })
+
+    draw(scale, translatePosition)
   }, [])
 
   return (
