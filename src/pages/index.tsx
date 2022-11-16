@@ -3,6 +3,25 @@
 import { useEffect } from 'react'
 import styles from '../styles/Home.module.css'
 
+interface Position {
+  x: number
+  y: number
+}
+
+interface Players {
+  [playerId: string]: Position
+}
+
+interface State {
+  players: Players
+}
+
+interface PlayerCommand {
+  playerId: string
+  playerX: number
+  playerY: number
+}
+
 export default function Home() {
   useEffect(() => {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement
@@ -10,9 +29,10 @@ export default function Home() {
     const buttonPlus = document.getElementById('plus') as HTMLButtonElement
     const buttonMinus = document.getElementById('minus') as HTMLButtonElement
 
-    function draw(scale: number, translatePosition: { x: number, y: number }): void {
+    function createMap(scale: number, translatePosition: { x: number, y: number }) {
       const mapImg = new Image()
       mapImg.src = './aceno.png'
+      // mapImg.src = 'https://github.com/LeandroGCruzP.png'
       
       mapImg.onload = () => {
         canvas.width = mapImg.width
@@ -22,6 +42,26 @@ export default function Home() {
         context.scale(scale, scale)
         context.drawImage(mapImg, 0, 0, mapImg.width, mapImg.height)
         context.restore()
+      }
+
+      const state: State = {
+        players: {},
+      }
+
+      function addPlayer(command: PlayerCommand): void {
+        const playerId = command.playerId
+        const playerX = command.playerX
+        const playerY = command.playerY
+
+        state.players[playerId] = {
+          x: playerX,
+          y: playerY,
+        }
+      }
+
+      return {
+        state,
+        addPlayer
       }
     }
 
@@ -39,13 +79,13 @@ export default function Home() {
     buttonPlus.addEventListener('click', () => {
       scale /= scaleMultiplier
 
-      draw(scale, translatePosition)
+      createMap(scale, translatePosition)
     }, false)
 
     buttonMinus.addEventListener('click', () => {
       scale *= scaleMultiplier
 
-      draw(scale, translatePosition)
+      createMap(scale, translatePosition)
     }, false)
 
     // TODO: Scroll event listener: zoom in and zoom out
@@ -74,11 +114,28 @@ export default function Home() {
       if(mouseDown) {
         translatePosition.x = event.clientX - startDragOffset.x
         translatePosition.y = event.clientY - startDragOffset.y
-        draw(scale, translatePosition)
+        createMap(scale, translatePosition)
       }
     })
 
-    draw(scale, translatePosition)
+    function renderScreen() {
+      // TODO: Render map
+
+      for (const playerId in game.state.players) {
+        const player = game.state.players[playerId]
+        var circle = new Path2D()
+        circle.moveTo(125, 35)
+        circle.arc(player.x, player.y, 10, 0, 2 * Math.PI)
+        context.fill(circle)
+        context.fillStyle = '#FFF'
+      }
+
+      requestAnimationFrame(renderScreen)
+    }
+
+    const game = createMap(scale, translatePosition)
+    game.addPlayer({ playerId: 'player1', playerX: 800, playerY: 425 })
+    renderScreen()
   }, [])
 
   return (
