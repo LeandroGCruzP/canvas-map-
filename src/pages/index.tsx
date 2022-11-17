@@ -30,13 +30,15 @@ export default function Home() {
   const [percentScale, setPercentScale] = useState(100)
 
   useEffect(() => {
+    const container = document.getElementById('containerCanvas') as HTMLDivElement
     const canvas = document.getElementById('canvas') as HTMLCanvasElement
     const context = canvas.getContext('2d') as CanvasRenderingContext2D
     const buttonPlus = document.getElementById('plus') as HTMLButtonElement
     const buttonMinus = document.getElementById('minus') as HTMLButtonElement
 
-    canvas.style.backgroundColor = 'green'
+    canvas.style.backgroundColor = 'gray'
 
+    const resizeCanvas = { height: 0, width: 0 }
     const translatePosition = { x: 0, y: 0 }
     let startDragOffset = { x: 0, y: 0 }
     const players: Players = {}
@@ -46,7 +48,7 @@ export default function Home() {
     const scaleMultiplier = 0.8
     let mouseDown = false
 
-    function createMap(scale: number, translatePosition: { x: number, y: number }) {
+    function createMap(scale: number, translatePosition: { x: number, y: number }) {      
       const mapImg = new Image()
       mapImg.src = './aceno.png'
       
@@ -56,9 +58,12 @@ export default function Home() {
         const relativeImageHeight = Math.round(height * scale)
         widthFactor = width / relativeImageWidth
         heightFactor = height / relativeImageHeight
-        
-        canvas.width = width
-        canvas.height = height
+
+        const containerHeight = container.offsetHeight
+        const containerWidth = container.offsetWidth
+
+        canvas.height = containerHeight
+        canvas.width = containerWidth
         
         context.clearRect(0, 0, width, height)
         
@@ -166,6 +171,16 @@ export default function Home() {
       canvas.addEventListener(eventName, mouseEvents[eventName as keyof MouseEventProps])
     })
 
+    // Resize canvas
+    function containerSize() {
+      resizeCanvas.height = container.offsetHeight
+      resizeCanvas.width = container.offsetWidth
+
+      createMap(scale, translatePosition)
+    }
+
+    new ResizeObserver(containerSize).observe(container)
+
     createMap(scale, translatePosition)
     addPlayer({ playerId: 'player1', playerX: 800, playerY: 430 })
     addPlayer({ playerId: 'player2', playerX: 625, playerY: 80 })
@@ -175,7 +190,7 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.wrapperCanvas}>
+      <div id='containerCanvas' className={styles.wrapperCanvas}>
         <canvas id='canvas' className={styles.canvas}></canvas>
 
         <div className={styles.commandWrapper}>
