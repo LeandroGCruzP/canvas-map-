@@ -27,6 +27,7 @@ interface MouseEventProps {
 export default function Home() {
   const [mousePositionX, setMousePositionX] = useState(0)
   const [mousePositionY, setMousePositionY] = useState(0)
+  const [percentScale, setPercentScale] = useState(100)
 
   useEffect(() => {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement
@@ -95,15 +96,27 @@ export default function Home() {
     
     // Button event listener: zoom in and zoom out
     buttonPlus.addEventListener('click', () => {
-      scale = scale / scaleMultiplier
+      if(scale < 1.95) { // 195%
+        scale = scale / scaleMultiplier
+  
+        const totalPercentScale = scale * 100
 
-      createMap(scale, translatePosition)
+        setPercentScale(Math.round(totalPercentScale))
+
+        createMap(scale, translatePosition)
+      }
     }, false)
 
     buttonMinus.addEventListener('click', () => {
-      scale = scale * scaleMultiplier
+      if(scale > 0.33) { // 33%
+        scale = scale * scaleMultiplier
 
-      createMap(scale, translatePosition)
+        const totalPercentScale = scale * 100
+
+        setPercentScale(Math.round(totalPercentScale))
+
+        createMap(scale, translatePosition)
+      }
     }, false)
 
     // Mouse event listener: dragging
@@ -166,6 +179,9 @@ export default function Home() {
         <canvas id='canvas' className={styles.canvas}></canvas>
 
         <div className={styles.commandWrapper}>
+          <div className={styles.position}>
+            <span>{percentScale}%</span>
+          </div>
           <div className={styles.position}>
             <span>x: {mousePositionX}</span>
             <span>y: {mousePositionY}</span>
