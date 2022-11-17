@@ -3,12 +3,10 @@
 import { useEffect, useState } from 'react'
 import styles from '../styles/Home.module.css'
 
-interface State {
-  players: {
-    [playerId: string]: {
-      x: number
-      y: number
-    }
+type Players = {
+  [playerId: string]: {
+    x: number
+    y: number
   }
 }
 
@@ -36,43 +34,33 @@ export default function Home() {
     const buttonPlus = document.getElementById('plus') as HTMLButtonElement
     const buttonMinus = document.getElementById('minus') as HTMLButtonElement
 
-    canvas.style.backgroundColor = 'gray'
+    canvas.style.backgroundColor = 'green'
 
-    const state: State = {
-      players: {},
-    }
-
-    const translatePosition = {
-      x: 0,
-      y: 0,
-    }
-
+    const translatePosition = { x: 0, y: 0 }
+    let startDragOffset = { x: 0, y: 0 }
+    const players: Players = {}
     let widthFactor = 0
     let heightFactor = 0
     let scale = 1
     const scaleMultiplier = 0.8
     let mouseDown = false
-    let startDragOffset= { 
-      x: 0, 
-      y: 0 
-    }
 
     function createMap(scale: number, translatePosition: { x: number, y: number }) {
       const mapImg = new Image()
       mapImg.src = './aceno.png'
       
       mapImg.onload = () => {
-        const { width, height } = mapImg
+        const { width, height } = mapImg // 1420 x 831
         const relativeImageWidth = Math.round(width * scale)
         const relativeImageHeight = Math.round(height * scale)
         widthFactor = width / relativeImageWidth
         heightFactor = height / relativeImageHeight
-
-        canvas.width = width // 1420
-        canvas.height = height // 831
-
+        
+        canvas.width = width
+        canvas.height = height
+        
         context.clearRect(0, 0, width, height)
-
+        
         context.translate(translatePosition.x, translatePosition.y)
         context.scale(scale, scale)
         context.drawImage(mapImg, 0, 0, width, height)
@@ -85,15 +73,16 @@ export default function Home() {
       const playerX = command.playerX
       const playerY = command.playerY
 
-      state.players[playerId] = {
+      players[playerId] = {
         x: playerX,
         y: playerY,
       }
     }
 
     function renderPlayers() {
-      for (const playerId in state.players) {
-        const player = state.players[playerId]
+      for (const playerId in players) {
+        const player = players[playerId]
+        
         var circle = new Path2D()
         circle.moveTo(125, 35)
         circle.arc(player.x, player.y, 10, 0, 2 * Math.PI)
@@ -123,32 +112,40 @@ export default function Home() {
         const { clientX, clientY } = window.event as MouseEvent
 
         mouseDown = true
+        if(mouseDown) {
+          canvas.style.cursor = 'move'
+        }
+
         startDragOffset.x = clientX - translatePosition.x
         startDragOffset.y = clientY - translatePosition.y
-      },
-      mouseup(){ 
-        mouseDown = false 
-      },
-      mouseover(){ 
-        mouseDown = false 
-      },
-      mouseout(){ 
-        mouseDown = false 
       },
       mousemove(){
         const { clientX, clientY, offsetX, offsetY } = window.event as MouseEvent
 
-        const y = Math.round((offsetY - translatePosition.y) * heightFactor)
-        const x = Math.round((offsetX - translatePosition.x) * widthFactor)
+        const mousePositionY = Math.round((offsetY - translatePosition.y) * heightFactor)
+        const mousePositionX = Math.round((offsetX - translatePosition.x) * widthFactor)
 
-        setMousePositionX(x)
-        setMousePositionY(y)
+        setMousePositionX(mousePositionX)
+        setMousePositionY(mousePositionY)
 
         if(mouseDown) {
           translatePosition.x = clientX - startDragOffset.x
           translatePosition.y = clientY - startDragOffset.y
           createMap(scale, translatePosition)
         }
+      },
+      mouseup(){ 
+        canvas.style.cursor = 'inherit'
+
+        mouseDown = false 
+      },
+      mouseover(){ 
+        mouseDown = false
+      },
+      mouseout(){ 
+        canvas.style.cursor = 'inherit'
+
+        mouseDown = false
       }
     }
 
@@ -157,8 +154,9 @@ export default function Home() {
     })
 
     createMap(scale, translatePosition)
-    addPlayer({ playerId: 'player1', playerX: 790, playerY: 430 })
+    addPlayer({ playerId: 'player1', playerX: 800, playerY: 430 })
     addPlayer({ playerId: 'player2', playerX: 625, playerY: 80 })
+    addPlayer({ playerId: 'player3', playerX: 270, playerY: 80 })
     renderPlayers()
   }, [])
 
