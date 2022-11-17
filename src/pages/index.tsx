@@ -47,14 +47,15 @@ export default function Home() {
       y: 0,
     }
 
-    let relativeImageWidth = 0
-    let relativeImageHeight = 0
     let widthFactor = 0
     let heightFactor = 0
-    let scale = 1 // TODO: Find responsive scale
+    let scale = 1
     const scaleMultiplier = 0.8
-    let startDragOffset= { x: 0, y: 0 }
     let mouseDown = false
+    let startDragOffset= { 
+      x: 0, 
+      y: 0 
+    }
 
     function createMap(scale: number, translatePosition: { x: number, y: number }) {
       const mapImg = new Image()
@@ -62,8 +63,8 @@ export default function Home() {
       
       mapImg.onload = () => {
         const { width, height } = mapImg
-        relativeImageWidth = Math.round(width * scale)
-        relativeImageHeight = Math.round(height * scale)
+        const relativeImageWidth = Math.round(width * scale)
+        const relativeImageHeight = Math.round(height * scale)
         widthFactor = width / relativeImageWidth
         heightFactor = height / relativeImageHeight
 
@@ -105,13 +106,13 @@ export default function Home() {
     
     // Button event listener: zoom in and zoom out
     buttonPlus.addEventListener('click', () => {
-      scale /= scaleMultiplier
+      scale = scale / scaleMultiplier
 
       createMap(scale, translatePosition)
     }, false)
 
     buttonMinus.addEventListener('click', () => {
-      scale *= scaleMultiplier
+      scale = scale * scaleMultiplier
 
       createMap(scale, translatePosition)
     }, false)
@@ -125,9 +126,15 @@ export default function Home() {
         startDragOffset.x = clientX - translatePosition.x
         startDragOffset.y = clientY - translatePosition.y
       },
-      mouseup(){ mouseDown = false },
-      mouseover(){ mouseDown = false },
-      mouseout(){ mouseDown = false },
+      mouseup(){ 
+        mouseDown = false 
+      },
+      mouseover(){ 
+        mouseDown = false 
+      },
+      mouseout(){ 
+        mouseDown = false 
+      },
       mousemove(){
         const { clientX, clientY, offsetX, offsetY } = window.event as MouseEvent
 
@@ -151,6 +158,7 @@ export default function Home() {
 
     createMap(scale, translatePosition)
     addPlayer({ playerId: 'player1', playerX: 790, playerY: 430 })
+    addPlayer({ playerId: 'player2', playerX: 625, playerY: 80 })
     renderPlayers()
   }, [])
 
