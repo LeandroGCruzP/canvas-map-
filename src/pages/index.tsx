@@ -1,19 +1,15 @@
 'use-client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import styles from '../styles/Home.module.css'
 
-interface Position {
-  x: number
-  y: number
-}
-
-interface Players {
-  [playerId: string]: Position
-}
-
 interface State {
-  players: Players
+  players: {
+    [playerId: string]: {
+      x: number
+      y: number
+    }
+  }
 }
 
 interface PlayerCommand {
@@ -22,59 +18,91 @@ interface PlayerCommand {
   playerY: number
 }
 
+interface MouseEventProps {
+  mousedown(): void
+  mouseup(): void
+  mouseover(): void
+  mouseout(): void
+  mousemove(): void
+}
+
 export default function Home() {
+  const [mousePositionX, setMousePositionX] = useState(0)
+  const [mousePositionY, setMousePositionY] = useState(0)
+
   useEffect(() => {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement
     const context = canvas.getContext('2d') as CanvasRenderingContext2D
     const buttonPlus = document.getElementById('plus') as HTMLButtonElement
     const buttonMinus = document.getElementById('minus') as HTMLButtonElement
 
-    function createMap(scale: number, translatePosition: { x: number, y: number }) {
-      const mapImg = new Image()
-      mapImg.src = './aceno.png'
-      // mapImg.src = 'https://github.com/LeandroGCruzP.png'
-      
-      mapImg.onload = () => {
-        canvas.width = mapImg.width
-        canvas.height = mapImg.height
+    canvas.style.backgroundColor = 'gray'
 
-        context.translate(translatePosition.x, translatePosition.y)
-        context.scale(scale, scale)
-        context.drawImage(mapImg, 0, 0, mapImg.width, mapImg.height)
-        context.restore()
-      }
-
-      const state: State = {
-        players: {},
-      }
-
-      function addPlayer(command: PlayerCommand): void {
-        const playerId = command.playerId
-        const playerX = command.playerX
-        const playerY = command.playerY
-
-        state.players[playerId] = {
-          x: playerX,
-          y: playerY,
-        }
-      }
-
-      return {
-        state,
-        addPlayer
-      }
+    const state: State = {
+      players: {},
     }
 
     const translatePosition = {
-      x: canvas.width / 2,
-      y: canvas.height / 2,
+      x: 0,
+      y: 0,
     }
 
+    let relativeImageWidth = 0
+    let relativeImageHeight = 0
+    let widthFactor = 0
+    let heightFactor = 0
     let scale = 1 // TODO: Find responsive scale
     const scaleMultiplier = 0.8
     let startDragOffset= { x: 0, y: 0 }
     let mouseDown = false
 
+    function createMap(scale: number, translatePosition: { x: number, y: number }) {
+      const mapImg = new Image()
+      mapImg.src = './aceno.png'
+      
+      mapImg.onload = () => {
+        const { width, height } = mapImg
+        relativeImageWidth = Math.round(width * scale)
+        relativeImageHeight = Math.round(height * scale)
+        widthFactor = width / relativeImageWidth
+        heightFactor = height / relativeImageHeight
+
+        canvas.width = width // 1420
+        canvas.height = height // 831
+
+        context.clearRect(0, 0, width, height)
+
+        context.translate(translatePosition.x, translatePosition.y)
+        context.scale(scale, scale)
+        context.drawImage(mapImg, 0, 0, width, height)
+        context.restore()
+      }
+    }
+
+    function addPlayer(command: PlayerCommand): void {
+      const playerId = command.playerId
+      const playerX = command.playerX
+      const playerY = command.playerY
+
+      state.players[playerId] = {
+        x: playerX,
+        y: playerY,
+      }
+    }
+
+    function renderPlayers() {
+      for (const playerId in state.players) {
+        const player = state.players[playerId]
+        var circle = new Path2D()
+        circle.moveTo(125, 35)
+        circle.arc(player.x, player.y, 10, 0, 2 * Math.PI)
+        context.fill(circle)
+        context.fillStyle = '#FFF'
+      }
+
+      requestAnimationFrame(renderPlayers)
+    }
+    
     // Button event listener: zoom in and zoom out
     buttonPlus.addEventListener('click', () => {
       scale /= scaleMultiplier
@@ -88,54 +116,42 @@ export default function Home() {
       createMap(scale, translatePosition)
     }, false)
 
-    // TODO: Scroll event listener: zoom in and zoom out
-
     // Mouse event listener: dragging
-    canvas.addEventListener('mousedown', (event) => {
-      mouseDown = true
-      startDragOffset.x = event.clientX - translatePosition.x
-      startDragOffset.y = event.clientY - translatePosition.y
-    })
+    const mouseEvents: MouseEventProps = {
+      mousedown(){
+        const { clientX, clientY } = window.event as MouseEvent
 
-    canvas.addEventListener('mouseup', () => {
-      mouseDown = false
-    })
+        mouseDown = true
+        startDragOffset.x = clientX - translatePosition.x
+        startDragOffset.y = clientY - translatePosition.y
+      },
+      mouseup(){ mouseDown = false },
+      mouseover(){ mouseDown = false },
+      mouseout(){ mouseDown = false },
+      mousemove(){
+        const { clientX, clientY, offsetX, offsetY } = window.event as MouseEvent
 
-    canvas.addEventListener('mouseover', () => {
-      mouseDown = false
-    })
+        const y = Math.round((offsetY - translatePosition.y) * heightFactor)
+        const x = Math.round((offsetX - translatePosition.x) * widthFactor)
 
-    canvas.addEventListener('mouseout', () => {
-      mouseDown = false
-    
-    })
-    
-    canvas.addEventListener('mousemove', (event) => {
-      if(mouseDown) {
-        translatePosition.x = event.clientX - startDragOffset.x
-        translatePosition.y = event.clientY - startDragOffset.y
-        createMap(scale, translatePosition)
+        setMousePositionX(x)
+        setMousePositionY(y)
+
+        if(mouseDown) {
+          translatePosition.x = clientX - startDragOffset.x
+          translatePosition.y = clientY - startDragOffset.y
+          createMap(scale, translatePosition)
+        }
       }
-    })
-
-    function renderScreen() {
-      // TODO: Render map
-
-      for (const playerId in game.state.players) {
-        const player = game.state.players[playerId]
-        var circle = new Path2D()
-        circle.moveTo(125, 35)
-        circle.arc(player.x, player.y, 10, 0, 2 * Math.PI)
-        context.fill(circle)
-        context.fillStyle = '#FFF'
-      }
-
-      requestAnimationFrame(renderScreen)
     }
 
-    const game = createMap(scale, translatePosition)
-    game.addPlayer({ playerId: 'player1', playerX: 800, playerY: 425 })
-    renderScreen()
+    Object.keys(mouseEvents).forEach((eventName) => {
+      canvas.addEventListener(eventName, mouseEvents[eventName as keyof MouseEventProps])
+    })
+
+    createMap(scale, translatePosition)
+    addPlayer({ playerId: 'player1', playerX: 790, playerY: 430 })
+    renderPlayers()
   }, [])
 
   return (
@@ -145,8 +161,8 @@ export default function Home() {
 
         <div className={styles.commandWrapper}>
           <div className={styles.position}>
-            <span>x: 1205</span>
-            <span>y: 548</span>
+            <span>x: {mousePositionX}</span>
+            <span>y: {mousePositionY}</span>
           </div>
 
           <div className={styles.buttons}>
