@@ -1,6 +1,7 @@
 'use-client'
 
 import { useEffect, useState } from 'react'
+import { useSocket } from '../hook/useSocket'
 import styles from '../styles/Home.module.css'
 
 type Players = {
@@ -36,6 +37,32 @@ export default function Home() {
   const [mousePositionX, setMousePositionX] = useState('')
   const [mousePositionY, setMousePositionY] = useState('')
   const [percentScale, setPercentScale] = useState(100)
+
+  const socket = useSocket()
+
+  useEffect(() => {
+    if(socket) {
+      socket.on('connect', () => console.log('[IO] > I am connected'))
+
+      socket.on('disconnect', () => console.log('[IO] > I am disconnected'))
+
+      socket.emit('init', {
+        width: 1377, // width canvas (px)
+        height: 782, // height canvas (px)
+        roomHeight: 1595, // height map (centimeter)
+        roomWidth: 887 // width map centimeter)
+      })
+
+      socket.on('move', ({ x, y }) => console.log(x, y))
+
+      return () => {
+        socket.off('connect')
+        socket.off('disconnect')
+        socket.off('init')
+        socket.off('move')
+      }
+    }
+  }, [socket])
 
   useEffect(() => {
     const div = document.getElementById('containerCanvas') as HTMLDivElement
