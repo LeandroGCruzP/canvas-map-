@@ -3,14 +3,15 @@
 ### Requirements
 
 * [x] - Render map on canvas
-* [ ] - Responsive map
+* [x] - Responsive map
 * [x] - Translate position of map
 * [x] - Convert cursor pointer on translate the position of map
 * [x] - Zoom in and zoom out on the map (through buttons)
 * [ ] - Zoom in and out on the map (through scroll)
 * [x] - Show the percentage of zoom in or zoom out (through span)
 * [x] - Show coordinates relative to the mouse position on the canvas (through span)
-* [ ] - Show full image in initial preview
+* [x] - Convert coordinates of pixels to meters on mouse move on canvas
+* [ ] - Show full image in initial preview (responsive scale)
 * [ ] - Show how many pixels are in a meter
 * [ ] - Method to add new map
     * [ ] - Input to import image

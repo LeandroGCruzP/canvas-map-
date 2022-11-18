@@ -25,9 +25,12 @@ interface MouseEventProps {
 }
 
 export default function Home() {
-  const [mousePositionX, setMousePositionX] = useState(0)
-  const [mousePositionY, setMousePositionY] = useState(0)
+  const [mousePositionX, setMousePositionX] = useState('')
+  const [mousePositionY, setMousePositionY] = useState('')
   const [percentScale, setPercentScale] = useState(100)
+
+  const totalMetersX = 15.95
+  const totalMetersY = 8.87
 
   useEffect(() => {
     const container = document.getElementById('containerCanvas') as HTMLDivElement
@@ -47,6 +50,8 @@ export default function Home() {
     let scale = 1
     const scaleMultiplier = 0.8
     let mouseDown = false
+    let totalPixelsX = 0
+    let totalPixelsY = 0
 
     function createMap(scale: number, translatePosition: { x: number, y: number }) {      
       const mapImg = new Image()
@@ -58,12 +63,22 @@ export default function Home() {
         const relativeImageHeight = Math.round(height * scale)
         widthFactor = width / relativeImageWidth
         heightFactor = height / relativeImageHeight
+        totalPixelsX = width
+        totalPixelsY = height
 
         const containerHeight = container.offsetHeight
         const containerWidth = container.offsetWidth
 
         canvas.height = containerHeight
         canvas.width = containerWidth
+
+        // translatePosition.x = (canvas.width - width) / 2 // Initial position center
+        // translatePosition.y = (canvas.height - height) / 2
+
+        // Image is bigger than canvas
+        // if(canvas.width < width) {
+        //   scale = scale * scaleMultiplier
+        // }
         
         context.clearRect(0, 0, width, height)
         
@@ -143,8 +158,11 @@ export default function Home() {
         const mousePositionY = Math.round((offsetY - translatePosition.y) * heightFactor)
         const mousePositionX = Math.round((offsetX - translatePosition.x) * widthFactor)
 
-        setMousePositionX(mousePositionX)
-        setMousePositionY(mousePositionY)
+        const convertPixelsToMetersX = mousePositionX * totalMetersX / totalPixelsX
+        const convertPixelsToMetersY = mousePositionY * totalMetersY / totalPixelsY
+
+        setMousePositionX(convertPixelsToMetersX.toFixed(2))
+        setMousePositionY(convertPixelsToMetersY.toFixed(2))
 
         if(mouseDown) {
           translatePosition.x = clientX - startDragOffset.x
@@ -181,10 +199,13 @@ export default function Home() {
 
     new ResizeObserver(containerSize).observe(container)
 
+    // Render map
     createMap(scale, translatePosition)
-    addPlayer({ playerId: 'player1', playerX: 800, playerY: 430 })
-    addPlayer({ playerId: 'player2', playerX: 625, playerY: 80 })
-    addPlayer({ playerId: 'player3', playerX: 270, playerY: 80 })
+    addPlayer({ playerId: 'Leh', playerX: 775, playerY: 415 })
+    addPlayer({ playerId: 'Tiago', playerX: 605, playerY: 60 })
+    addPlayer({ playerId: 'Lucas', playerX: 245, playerY: 60 })
+    addPlayer({ playerId: 'Henrique', playerX: 775, playerY: 635 })
+    addPlayer({ playerId: 'Luiz', playerX: 550, playerY: 635 })
     renderPlayers()
   }, [])
 
@@ -215,40 +236,11 @@ export default function Home() {
         <div>
           <div className={styles.selection}>
             <input type='checkbox' name='selection1' id='selection1' />
-            <span>Selection 1</span>
+            <span>x: 15,95 ~ 1377</span>
           </div>
           <div className={styles.selection}>
             <input type='checkbox' name='selection2' id='selection2' />
-            <span>Selection 2</span>
-          </div>
-          <div className={styles.selection}>
-            <input type='checkbox' name='selection3' id='selection3' />
-            <span>Selection 3</span>
-          </div>
-        </div>
-
-        <h3>More actions</h3>
-
-        <div>
-          <div className={styles.selection}>
-            <input type='checkbox' name='selection4' id='selection4' />
-            <span>Selection 4</span>
-          </div>
-          <div className={styles.selection}>
-            <input type='checkbox' name='selection5' id='selection5' />
-            <span>Selection 5</span>
-          </div>
-          <div className={styles.selection}>
-            <input type='checkbox' name='selection6' id='selection6' />
-            <span>Selection 6</span>
-          </div>
-          <div className={styles.selection}>
-            <input type='checkbox' name='selection7' id='selection7' />
-            <span>Selection 7</span>
-          </div>
-          <div className={styles.selection}>
-            <input type='checkbox' name='selection8' id='selection8' />
-            <span>Selection 8</span>
+            <span>y: 8,87 ~ 782</span>
           </div>
         </div>
       </div>
