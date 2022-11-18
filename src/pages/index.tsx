@@ -217,7 +217,7 @@ export default function Home() {
         <canvas id='canvas' className={styles.canvas}></canvas>
 
         <div className={styles.commandWrapper}>
-          <div className={styles.position}>
+          <div className={styles.percentage}>
             <span>{percentScale}%</span>
           </div>
           <div className={styles.position}>

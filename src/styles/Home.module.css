@@ -24,12 +24,24 @@
   top: 5px;
   right: 5px;
   display: flex;
+  background-color: rgba(255, 255, 255, 0.3);
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.commandWrapper .percentage {
+  display: flex;
+  flex-direction: column;
+  margin-right: 10px;
+  min-width: 50px;
+
 }
 
 .commandWrapper .position {
   display: flex;
   flex-direction: column;
   margin-right: 10px;
+  min-width: 75px;
 }
 
 .commandWrapper .buttons {
