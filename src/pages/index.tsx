@@ -55,6 +55,7 @@ export default function Home() {
     const [totalMetersOfCanvasX, totalMetersOfCanvasY] = [15.95, 8.87]
     let [totalPixelsOfCanvasX, totalPixelsOfCanvasY] = [0, 0]
     let mouseDown = false
+    let [playerX, playerY] = [775, 415]
 
     function createMap({ scale, translateCanvasPosition }: CreateMapArgs): void {
       const image = new Image()
@@ -96,13 +97,19 @@ export default function Home() {
     function renderPlayers(): void {
       for (const playerId in players) {
         const player = players[playerId]
+        const sizePlayer = 10
 
         // Creating player
         var circle = new Path2D()
         circle.moveTo(125, 35)
-        circle.arc(player.x, player.y, 10, 0, 2 * Math.PI)
+        circle.arc(player.x, player.y, sizePlayer, 0, 2 * Math.PI)
         context.fill(circle)
-        context.fillStyle = '#FFF'
+        context.fillStyle = 'white'
+
+        // Text below player
+        context.font = '15px Roboto'
+        context.textAlign = 'center'
+        context.fillText(playerId, player.x, player.y + sizePlayer * 3)
       }
 
       requestAnimationFrame(renderPlayers)
@@ -203,11 +210,7 @@ export default function Home() {
 
     // Render map
     createMap({ scale, translateCanvasPosition })
-    addPlayer({ playerId: 'Leh', playerX: 775, playerY: 415 })
-    addPlayer({ playerId: 'Tiago', playerX: 605, playerY: 60 })
-    addPlayer({ playerId: 'Lucas', playerX: 245, playerY: 60 })
-    addPlayer({ playerId: 'Henrique', playerX: 775, playerY: 635 })
-    addPlayer({ playerId: 'Luiz', playerX: 550, playerY: 635 })
+    addPlayer({ playerId: 'Leh', playerX: playerX, playerY: playerY })
     renderPlayers()
   }, [])
 
