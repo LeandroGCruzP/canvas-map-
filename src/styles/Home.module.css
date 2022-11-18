@@ -15,10 +15,8 @@
 .wrapperCanvas .canvas {
   touch-action: none;
   position: absolute;
-  /* z-index: 800; */
   pointer-events: auto;
-  /* cursor: move; */
-  /* cursor: inherit; */
+  background-color: black;
 }
 
 .wrapperCanvas .commandWrapper {

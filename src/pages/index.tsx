@@ -24,75 +24,68 @@ interface MouseEventProps {
   mousemove(): void
 }
 
+type CreateMapArgs = {
+  scale: number
+  translateCanvasPosition: {
+    x: number
+    y: number
+  }
+}
+
 export default function Home() {
   const [mousePositionX, setMousePositionX] = useState('')
   const [mousePositionY, setMousePositionY] = useState('')
   const [percentScale, setPercentScale] = useState(100)
 
-  const totalMetersX = 15.95
-  const totalMetersY = 8.87
-
   useEffect(() => {
-    const container = document.getElementById('containerCanvas') as HTMLDivElement
+    const div = document.getElementById('containerCanvas') as HTMLDivElement
     const canvas = document.getElementById('canvas') as HTMLCanvasElement
     const context = canvas.getContext('2d') as CanvasRenderingContext2D
     const buttonPlus = document.getElementById('plus') as HTMLButtonElement
     const buttonMinus = document.getElementById('minus') as HTMLButtonElement
 
-    canvas.style.backgroundColor = 'gray'
-
-    const resizeCanvas = { height: 0, width: 0 }
-    const translatePosition = { x: 0, y: 0 }
-    let startDragOffset = { x: 0, y: 0 }
+    const canvasSize = { height: 0, width: 0 }
+    const translateCanvasPosition = { x: 0, y: 0 }
+    const dragOffset = { x: 0, y: 0 }
     const players: Players = {}
-    let widthFactor = 0
-    let heightFactor = 0
+
+    let [widthFactor, heightFactor] = [0, 0]
     let scale = 1
     const scaleMultiplier = 0.8
+    const [totalMetersOfCanvasX, totalMetersOfCanvasY] = [15.95, 8.87]
+    let [totalPixelsOfCanvasX, totalPixelsOfCanvasY] = [0, 0]
     let mouseDown = false
-    let totalPixelsX = 0
-    let totalPixelsY = 0
 
-    function createMap(scale: number, translatePosition: { x: number, y: number }) {      
-      const mapImg = new Image()
-      mapImg.src = './aceno.png'
-      
-      mapImg.onload = () => {
-        const { width, height } = mapImg // 1420 x 831
-        const relativeImageWidth = Math.round(width * scale)
-        const relativeImageHeight = Math.round(height * scale)
-        widthFactor = width / relativeImageWidth
-        heightFactor = height / relativeImageHeight
-        totalPixelsX = width
-        totalPixelsY = height
+    function createMap({ scale, translateCanvasPosition }: CreateMapArgs): void {
+      const image = new Image()
+      image.src = './aceno.png'
 
-        const containerHeight = container.offsetHeight
-        const containerWidth = container.offsetWidth
+      image.onload = () => {
+        const { width: widthImage, height: heightImage } = image
+        const [relativeWidthOfImageByScale, relativeHeightOfImageByScale] = [
+          Math.round(widthImage * scale),
+          Math.round(heightImage * scale),
+        ]
+        widthFactor = widthImage / relativeWidthOfImageByScale
+        heightFactor = heightImage / relativeHeightOfImageByScale
 
-        canvas.height = containerHeight
-        canvas.width = containerWidth
+        totalPixelsOfCanvasX = widthImage
+        totalPixelsOfCanvasY = heightImage
 
-        // translatePosition.x = (canvas.width - width) / 2 // Initial position center
-        // translatePosition.y = (canvas.height - height) / 2
+        canvas.height = div.offsetHeight
+        canvas.width = div.offsetWidth
 
-        // Image is bigger than canvas
-        // if(canvas.width < width) {
-        //   scale = scale * scaleMultiplier
-        // }
-        
-        context.clearRect(0, 0, width, height)
-        
-        context.translate(translatePosition.x, translatePosition.y)
+        context.clearRect(0, 0, widthImage, heightImage)
+
+        context.translate(translateCanvasPosition.x, translateCanvasPosition.y)
         context.scale(scale, scale)
-        context.drawImage(mapImg, 0, 0, width, height)
+        context.drawImage(image, 0, 0, widthImage, heightImage)
         context.restore()
       }
     }
 
     function addPlayer(command: PlayerCommand): void {
-      const playerId = command.playerId
-      const playerX = command.playerX
-      const playerY = command.playerY
+      const { playerId, playerX, playerY } = command
 
       players[playerId] = {
         x: playerX,
@@ -100,10 +93,11 @@ export default function Home() {
       }
     }
 
-    function renderPlayers() {
+    function renderPlayers(): void {
       for (const playerId in players) {
         const player = players[playerId]
-        
+
+        // Creating player
         var circle = new Path2D()
         circle.moveTo(125, 35)
         circle.arc(player.x, player.y, 10, 0, 2 * Math.PI)
@@ -113,94 +107,102 @@ export default function Home() {
 
       requestAnimationFrame(renderPlayers)
     }
-    
+
     // Button event listener: zoom in and zoom out
     buttonPlus.addEventListener('click', () => {
-      if(scale < 1.95) { // 195%
+      if (scale < 1.95) { // 195%
         scale = scale / scaleMultiplier
-  
+
         const totalPercentScale = scale * 100
 
         setPercentScale(Math.round(totalPercentScale))
 
-        createMap(scale, translatePosition)
+        createMap({ scale, translateCanvasPosition })
       }
     }, false)
 
     buttonMinus.addEventListener('click', () => {
-      if(scale > 0.33) { // 33%
+      if (scale > 0.33) { // 33%
         scale = scale * scaleMultiplier
 
         const totalPercentScale = scale * 100
 
         setPercentScale(Math.round(totalPercentScale))
 
-        createMap(scale, translatePosition)
+        createMap({ scale, translateCanvasPosition })
       }
     }, false)
 
-    // Mouse event listener: dragging
+    // Mouse event listener: dragging and moving
     const mouseEvents: MouseEventProps = {
-      mousedown(){
+      mousedown() {
         const { clientX, clientY } = window.event as MouseEvent
 
         mouseDown = true
-        if(mouseDown) {
+        
+        if (mouseDown) {
           canvas.style.cursor = 'move'
         }
 
-        startDragOffset.x = clientX - translatePosition.x
-        startDragOffset.y = clientY - translatePosition.y
+        dragOffset.x = clientX - translateCanvasPosition.x
+        dragOffset.y = clientY - translateCanvasPosition.y
       },
-      mousemove(){
-        const { clientX, clientY, offsetX, offsetY } = window.event as MouseEvent
+      mousemove() {
+        const { clientX, clientY, offsetX, offsetY } =
+          window.event as MouseEvent
 
-        const mousePositionY = Math.round((offsetY - translatePosition.y) * heightFactor)
-        const mousePositionX = Math.round((offsetX - translatePosition.x) * widthFactor)
+        const mousePositionY = Math.round(
+          (offsetY - translateCanvasPosition.y) * heightFactor
+        )
+        const mousePositionX = Math.round(
+          (offsetX - translateCanvasPosition.x) * widthFactor
+        )
 
-        const convertPixelsToMetersX = mousePositionX * totalMetersX / totalPixelsX
-        const convertPixelsToMetersY = mousePositionY * totalMetersY / totalPixelsY
+        const [convertPixelsToMetersX, convertPixelsToMetersY] = [
+          (mousePositionX * totalMetersOfCanvasX) / totalPixelsOfCanvasX,
+          (mousePositionY * totalMetersOfCanvasY) / totalPixelsOfCanvasY
+        ]
 
         setMousePositionX(convertPixelsToMetersX.toFixed(2))
         setMousePositionY(convertPixelsToMetersY.toFixed(2))
 
-        if(mouseDown) {
-          translatePosition.x = clientX - startDragOffset.x
-          translatePosition.y = clientY - startDragOffset.y
-          createMap(scale, translatePosition)
+        if (mouseDown) {
+          translateCanvasPosition.x = clientX - dragOffset.x
+          translateCanvasPosition.y = clientY - dragOffset.y
+          createMap({ scale, translateCanvasPosition })
         }
       },
-      mouseup(){ 
-        canvas.style.cursor = 'inherit'
-
-        mouseDown = false 
-      },
-      mouseover(){ 
-        mouseDown = false
-      },
-      mouseout(){ 
+      mouseup() {
         canvas.style.cursor = 'inherit'
 
         mouseDown = false
-      }
+      },
+      mouseover() {
+        mouseDown = false
+      },
+      mouseout() {
+        canvas.style.cursor = 'inherit'
+
+        mouseDown = false
+      },
     }
 
     Object.keys(mouseEvents).forEach((eventName) => {
-      canvas.addEventListener(eventName, mouseEvents[eventName as keyof MouseEventProps])
+      canvas.addEventListener( eventName, mouseEvents[eventName as keyof MouseEventProps])
     })
 
     // Resize canvas
     function containerSize() {
-      resizeCanvas.height = container.offsetHeight
-      resizeCanvas.width = container.offsetWidth
+      canvasSize.height = div.offsetHeight
+      canvasSize.width = div.offsetWidth
 
-      createMap(scale, translatePosition)
+      createMap({ scale, translateCanvasPosition })
     }
 
-    new ResizeObserver(containerSize).observe(container)
+    new ResizeObserver(containerSize).observe(div)
 
     // Render map
-    createMap(scale, translatePosition)
+    createMap({ scale, translateCanvasPosition })
     addPlayer({ playerId: 'Leh', playerX: 775, playerY: 415 })
     addPlayer({ playerId: 'Tiago', playerX: 605, playerY: 60 })
     addPlayer({ playerId: 'Lucas', playerX: 245, playerY: 60 })
