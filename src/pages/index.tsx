@@ -11,7 +11,7 @@ type Players = {
   }
 }
 
-interface PlayerCommand {
+type PlayerCommand = {
   playerId: string
   playerX: number
   playerY: number
@@ -22,7 +22,7 @@ type CommandToMovePlayer = {
   playerId: string
 }
 
-interface MouseEventProps {
+type MouseEventProps = {
   mousedown(): void
   mouseup(): void
   mouseover(): void
@@ -96,6 +96,7 @@ export default function Home() {
     let mouseDown = false
     let [playerX, playerY] = [775, 415]
 
+    // * --------------------------- Fn: Creating map --------------------------- * //
     function createMap({ scale, translateCanvasPosition }: CreateMapArgs): void {
       const image = new Image()
       image.src = './aceno.png'
@@ -124,6 +125,7 @@ export default function Home() {
       }
     }
 
+    // * --------------------------- Fn: Adding player --------------------------- * //
     function addPlayer(command: PlayerCommand): void {
       const { playerId, playerX, playerY } = command
 
@@ -133,6 +135,7 @@ export default function Home() {
       }
     }
 
+    // * --------------------------- Fn: Moving player --------------------------- * //
     function movePlayer(command: CommandToMovePlayer): void {
       const acceptedMoves = {
         ArrowUp(playerPosition: Position) {
@@ -168,6 +171,7 @@ export default function Home() {
       }
     }
 
+    // * ------------------------- Fn: Keyboard Listener ------------------------- * //
     function createKeyboardListener() {
       document.addEventListener('keydown', handleKeyDown)
 
@@ -199,22 +203,23 @@ export default function Home() {
       }
     }
 
+    // * -------------------------- Fn: Render Players -------------------------- * //
     function renderPlayers(): void {
-      // Render map
+      // * Render map
       createMap({ scale, translateCanvasPosition })
       
       for (const playerId in players) {
         const player = players[playerId]
         const sizePlayer = 10
 
-        // Creating player
+        // * Creating player
         var circle = new Path2D()
         circle.moveTo(125, 35)
         circle.arc(player.x, player.y, sizePlayer, 0, 2 * Math.PI)
         context.fill(circle)
         context.fillStyle = 'white'
 
-        // Text below player
+        // * Text below player
         context.font = '15px Roboto'
         context.textAlign = 'center'
         context.fillText(playerId, player.x, player.y + sizePlayer * 3)
@@ -223,9 +228,9 @@ export default function Home() {
       requestAnimationFrame(renderPlayers)
     }
 
-    // Button event listener: zoom in and zoom out
+    // * ------------ Event listener (buttons): zoom in and zoom out ------------ * //
     buttonPlus.addEventListener('click', () => {
-      if (scale < 1.95) { // 195%
+      if (scale < 1.95) { // * max: 195%
         scale = scale / scaleMultiplier
 
         const totalPercentScale = scale * 100
@@ -237,7 +242,7 @@ export default function Home() {
     }, false)
 
     buttonMinus.addEventListener('click', () => {
-      if (scale > 0.33) { // 33%
+      if (scale > 0.33) { // * min: 33%
         scale = scale * scaleMultiplier
 
         const totalPercentScale = scale * 100
@@ -248,7 +253,7 @@ export default function Home() {
       }
     }, false)
 
-    // Mouse event listener: dragging and moving
+    // * ------------- Event listener (mouse): dragging and moving ------------- * //
     const mouseEvents: MouseEventProps = {
       mousedown() {
         const { clientX, clientY } = window.event as MouseEvent
@@ -263,8 +268,7 @@ export default function Home() {
         dragOffset.y = clientY - translateCanvasPosition.y
       },
       mousemove() {
-        const { clientX, clientY, offsetX, offsetY } =
-          window.event as MouseEvent
+        const { clientX, clientY, offsetX, offsetY } = window.event as MouseEvent
 
         const mousePositionY = Math.round(
           (offsetY - translateCanvasPosition.y) * heightFactor
@@ -306,7 +310,7 @@ export default function Home() {
       canvas.addEventListener( eventName, mouseEvents[eventName as keyof MouseEventProps])
     })
 
-    // Resize canvas
+    // * ---------------------------- Resize canvas ---------------------------- * //
     function containerSize() {
       canvasSize.height = div.offsetHeight
       canvasSize.width = div.offsetWidth
@@ -316,7 +320,7 @@ export default function Home() {
 
     new ResizeObserver(containerSize).observe(div)
 
-    // Render map
+    // * ------------------- Render map, players and others ------------------- * //
     createMap({ scale, translateCanvasPosition })
     const keyboardListener = createKeyboardListener()
     keyboardListener.subscribe(movePlayer)
