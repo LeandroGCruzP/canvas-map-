@@ -17,6 +17,11 @@ interface PlayerCommand {
   playerY: number
 }
 
+type CommandToMovePlayer = {
+  keyPressed: string
+  playerId: string
+}
+
 interface MouseEventProps {
   mousedown(): void
   mouseup(): void
@@ -31,6 +36,11 @@ type CreateMapArgs = {
     x: number
     y: number
   }
+}
+
+type Position = {
+  x: number
+  y: number
 }
 
 export default function Home() {
@@ -53,7 +63,9 @@ export default function Home() {
         roomWidth: 887 // width map centimeter)
       })
 
-      socket.on('move', ({ x, y }) => console.log(x, y))
+      socket.on('move', ({ x, y }) => {
+        // console.log(x, y)
+      })
 
       return () => {
         socket.off('connect')
@@ -121,7 +133,76 @@ export default function Home() {
       }
     }
 
+    function movePlayer(command: CommandToMovePlayer): void {
+      const acceptedMoves = {
+        ArrowUp(playerPosition: Position) {
+          if(playerPosition.y - 1 >= 0) {
+            playerPosition.y = playerPosition.y - 1
+          }
+        },
+        ArrowRight(playerPosition: Position) {
+          if(playerPosition.x + 1 < canvas.width) {
+            playerPosition.x = playerPosition.x + 1
+          }
+        },
+        ArrowDown(playerPosition: Position) {
+          if(playerPosition.y + 1 < canvas.height) {
+            playerPosition.y = playerPosition.y + 1
+          }
+        },
+        ArrowLeft(playerPosition: Position) {
+          if(playerPosition.x - 1 >= 0) {
+            playerPosition.x = playerPosition.x - 1
+          }
+        }
+      }
+
+      
+      const keyPressed = command.keyPressed
+      const playerId = command.playerId
+      const playerPosition = players[playerId]
+      const moveFunction = acceptedMoves[keyPressed]
+
+      if(playerPosition && moveFunction) {
+        moveFunction(playerPosition)
+      }
+    }
+
+    function createKeyboardListener() {
+      document.addEventListener('keydown', handleKeyDown)
+
+      const state: { observers: any } = { observers: [] }
+
+      function handleKeyDown(event: KeyboardEvent): void {
+        const keyPressed = event.key
+  
+        const playerCommand: CommandToMovePlayer = {
+          playerId: 'Leh',
+          keyPressed
+        }
+  
+        notifyAll(playerCommand)
+      }
+
+      function subscribe(observerFn: (playerCommand: CommandToMovePlayer) => void): void {
+        state.observers.push(observerFn)
+      }
+
+      function notifyAll(playerCommand: CommandToMovePlayer): void {
+        for(const observerFunction of state.observers) {
+          observerFunction(playerCommand)
+        }
+      }
+
+      return {
+        subscribe
+      }
+    }
+
     function renderPlayers(): void {
+      // Render map
+      createMap({ scale, translateCanvasPosition })
+      
       for (const playerId in players) {
         const player = players[playerId]
         const sizePlayer = 10
@@ -237,6 +318,8 @@ export default function Home() {
 
     // Render map
     createMap({ scale, translateCanvasPosition })
+    const keyboardListener = createKeyboardListener()
+    keyboardListener.subscribe(movePlayer)
     addPlayer({ playerId: 'Leh', playerX: playerX, playerY: playerY })
     renderPlayers()
   }, [])
