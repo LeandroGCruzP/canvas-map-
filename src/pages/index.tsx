@@ -11,17 +11,6 @@ type Players = {
   }
 }
 
-type PlayerCommand = {
-  playerId: string
-  playerX: number
-  playerY: number
-}
-
-type CommandToMovePlayer = {
-  keyPressed: string
-  playerId: string
-}
-
 type MouseEventProps = {
   mousedown(): void
   mouseup(): void
@@ -38,9 +27,12 @@ type CreateMapArgs = {
   }
 }
 
-type Position = {
-  x: number
-  y: number
+type Player = {
+  id: string
+  position: {
+    x: number
+    y: number
+  }
 }
 
 export default function Home() {
@@ -61,17 +53,17 @@ export default function Home() {
         roomWidth: 887 // width map centimeter)
       })
 
-      socket.on('move', ({ x, y }) => {
+      socket.on('move', (data: Player) => {
         function movementListener(movement: any) {
           if(players) {
-            players[movement.playerId] = {
+            players[movement.tag] = {
               x: movement.x,
               y: movement.y
             }
           }
         }
 
-        movementListener({ playerId: 'Leh', x, y })
+        movementListener({ tag: data.id, x: data.position.x, y: data.position.y })
       })
 
       return () => {
@@ -103,7 +95,6 @@ export default function Home() {
 
     let scale = 1
     let mouseDown = false
-    let [playerX, playerY] = [775, 415]
 
     // * --------------------------- Fn: Creating map --------------------------- * //
     function createMap({ scale, translateCanvasPosition }: CreateMapArgs): void {
@@ -134,19 +125,11 @@ export default function Home() {
       }
     }
 
-    // * --------------------------- Fn: Adding player --------------------------- * //
-    function addPlayer(command: PlayerCommand): void {
-      const { playerId, playerX, playerY } = command
-
-      players[playerId] = {
-        x: playerX,
-        y: playerY,
-      }
-    }
-
     // * -------------------------- Fn: Render Players -------------------------- * //
     function renderPlayers(): void {
       // * Render map
+      const image = new Image()
+      image.src = './player.png'
       createMap({ scale, translateCanvasPosition })
       
       for (const playerId in players) {
@@ -154,13 +137,10 @@ export default function Home() {
         const sizePlayer = 10
 
         // * Creating player
-        var circle = new Path2D()
-        circle.moveTo(125, 35)
-        circle.arc(player.x, player.y, sizePlayer, 0, 2 * Math.PI)
-        context.fill(circle)
-        context.fillStyle = 'white'
+        context.drawImage(image, player.x - 5, player.y)
 
         // * Text below player
+        context.fillStyle = 'white'
         context.font = '15px Roboto'
         context.textAlign = 'center'
         context.fillText(playerId, player.x, player.y + sizePlayer * 3)
@@ -197,6 +177,34 @@ export default function Home() {
         createMap({ scale, translateCanvasPosition })
       }
     }, false)
+
+    // * ------------ Event listener (scroll): zoom in and zoom out ------------ * //
+    canvas.addEventListener('wheel', event => {
+      if(event.deltaY < 0 && scale < 1.95) {
+        scale = scale / scaleMultiplier
+
+        const totalPercentScale = scale * 100
+
+        let percentScale = Math.round(totalPercentScale)
+
+        spanScale.textContent = String(percentScale)
+
+        createMap({ scale, translateCanvasPosition })
+      } 
+      
+      else if (event.deltaY > 0 && scale > 0.33) {
+        scale = scale * scaleMultiplier
+
+        const totalPercentScale = scale * 100
+
+        let percentScale = Math.round(totalPercentScale)
+
+        spanScale.textContent = String(percentScale)
+
+        createMap({ scale, translateCanvasPosition })
+      }
+      
+    })
 
     // * ------------- Event listener (mouse): dragging and moving ------------- * //
     const mouseEvents: MouseEventProps = {
@@ -268,7 +276,6 @@ export default function Home() {
 
     // * ------------------- Render map, players and others ------------------- * //
     createMap({ scale, translateCanvasPosition })
-    addPlayer({ playerId: 'Ale', playerX: playerX, playerY: playerY })
     renderPlayers()
   }, [players])
 
