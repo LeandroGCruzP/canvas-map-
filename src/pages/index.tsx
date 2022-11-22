@@ -1,6 +1,6 @@
 'use-client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSocket } from '../hook/useSocket'
 import styles from '../styles/Home.module.css'
 
@@ -38,7 +38,11 @@ type Player = {
 export default function Home() {
   const socket = useSocket()
 
-  const players: Players = {}
+  const playersRendered = useMemo(() => {
+    const players: Players = {}
+
+    return players
+  }, [])
 
   useEffect(() => {
     if(socket) {
@@ -55,8 +59,8 @@ export default function Home() {
 
       socket.on('move', (data: Player) => {
         function movementListener(movement: any) {
-          if(players) {
-            players[movement.tag] = {
+          if(playersRendered) {
+            playersRendered[movement.tag] = {
               x: movement.x,
               y: movement.y
             }
@@ -73,7 +77,7 @@ export default function Home() {
         socket.off('move')
       }
     }
-  }, [socket, players])
+  }, [socket, playersRendered])
 
   useEffect(() => {
     const div = document.getElementById('containerCanvas') as HTMLDivElement
@@ -132,8 +136,8 @@ export default function Home() {
       image.src = './player.png'
       createMap({ scale, translateCanvasPosition })
       
-      for (const playerId in players) {
-        const player = players[playerId]
+      for (const playerId in playersRendered) {
+        const player = playersRendered[playerId]
         const sizePlayer = 10
 
         // * Creating player
@@ -277,7 +281,7 @@ export default function Home() {
     // * ------------------- Render map, players and others ------------------- * //
     createMap({ scale, translateCanvasPosition })
     renderPlayers()
-  }, [players])
+  }, [playersRendered])
 
   return (
     <div className={styles.container}>
