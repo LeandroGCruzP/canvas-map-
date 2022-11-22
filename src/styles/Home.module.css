@@ -31,17 +31,23 @@
 
 .commandWrapper .percentage {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   margin-right: 10px;
   min-width: 50px;
 
 }
 
-.commandWrapper .position {
+.commandWrapper .positions {
   display: flex;
   flex-direction: column;
   margin-right: 10px;
   min-width: 75px;
+}
+
+.commandWrapper .positions .position{
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
 }
 
 .commandWrapper .buttons {

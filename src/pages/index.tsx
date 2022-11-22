@@ -1,6 +1,6 @@
 'use-client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useSocket } from '../hook/useSocket'
 import styles from '../styles/Home.module.css'
 
@@ -44,11 +44,9 @@ type Position = {
 }
 
 export default function Home() {
-  const [mousePositionX, setMousePositionX] = useState('')
-  const [mousePositionY, setMousePositionY] = useState('')
-  const [percentScale, setPercentScale] = useState(100)
-
   const socket = useSocket()
+
+  const players: Players = {}
 
   useEffect(() => {
     if(socket) {
@@ -64,7 +62,16 @@ export default function Home() {
       })
 
       socket.on('move', ({ x, y }) => {
-        // console.log(x, y)
+        function movementListener(movement: any) {
+          if(players) {
+            players[movement.playerId] = {
+              x: movement.x,
+              y: movement.y
+            }
+          }
+        }
+
+        movementListener({ playerId: 'Leh', x, y })
       })
 
       return () => {
@@ -74,7 +81,7 @@ export default function Home() {
         socket.off('move')
       }
     }
-  }, [socket])
+  }, [socket, players])
 
   useEffect(() => {
     const div = document.getElementById('containerCanvas') as HTMLDivElement
@@ -82,17 +89,19 @@ export default function Home() {
     const context = canvas.getContext('2d') as CanvasRenderingContext2D
     const buttonPlus = document.getElementById('plus') as HTMLButtonElement
     const buttonMinus = document.getElementById('minus') as HTMLButtonElement
+    const spanPositionX = document.getElementById('mousePositionX') as HTMLSpanElement
+    const spanPositionY = document.getElementById('mousePositionY') as HTMLSpanElement
+    const spanScale = document.getElementById('scale') as HTMLSpanElement
 
+    let [widthFactor, heightFactor] = [0, 0]
+    let [totalPixelsOfCanvasX, totalPixelsOfCanvasY] = [0, 0]
     const canvasSize = { height: 0, width: 0 }
     const translateCanvasPosition = { x: 0, y: 0 }
     const dragOffset = { x: 0, y: 0 }
-    const players: Players = {}
-
-    let [widthFactor, heightFactor] = [0, 0]
-    let scale = 1
     const scaleMultiplier = 0.8
     const [totalMetersOfCanvasX, totalMetersOfCanvasY] = [15.95, 8.87]
-    let [totalPixelsOfCanvasX, totalPixelsOfCanvasY] = [0, 0]
+
+    let scale = 1
     let mouseDown = false
     let [playerX, playerY] = [775, 415]
 
@@ -135,74 +144,6 @@ export default function Home() {
       }
     }
 
-    // * --------------------------- Fn: Moving player --------------------------- * //
-    function movePlayer(command: CommandToMovePlayer): void {
-      const acceptedMoves = {
-        ArrowUp(playerPosition: Position) {
-          if(playerPosition.y - 1 >= 0) {
-            playerPosition.y = playerPosition.y - 1
-          }
-        },
-        ArrowRight(playerPosition: Position) {
-          if(playerPosition.x + 1 < canvas.width) {
-            playerPosition.x = playerPosition.x + 1
-          }
-        },
-        ArrowDown(playerPosition: Position) {
-          if(playerPosition.y + 1 < canvas.height) {
-            playerPosition.y = playerPosition.y + 1
-          }
-        },
-        ArrowLeft(playerPosition: Position) {
-          if(playerPosition.x - 1 >= 0) {
-            playerPosition.x = playerPosition.x - 1
-          }
-        }
-      }
-
-      
-      const keyPressed = command.keyPressed
-      const playerId = command.playerId
-      const playerPosition = players[playerId]
-      const moveFunction = acceptedMoves[keyPressed]
-
-      if(playerPosition && moveFunction) {
-        moveFunction(playerPosition)
-      }
-    }
-
-    // * ------------------------- Fn: Keyboard Listener ------------------------- * //
-    function createKeyboardListener() {
-      document.addEventListener('keydown', handleKeyDown)
-
-      const state: { observers: any } = { observers: [] }
-
-      function handleKeyDown(event: KeyboardEvent): void {
-        const keyPressed = event.key
-  
-        const playerCommand: CommandToMovePlayer = {
-          playerId: 'Leh',
-          keyPressed
-        }
-  
-        notifyAll(playerCommand)
-      }
-
-      function subscribe(observerFn: (playerCommand: CommandToMovePlayer) => void): void {
-        state.observers.push(observerFn)
-      }
-
-      function notifyAll(playerCommand: CommandToMovePlayer): void {
-        for(const observerFunction of state.observers) {
-          observerFunction(playerCommand)
-        }
-      }
-
-      return {
-        subscribe
-      }
-    }
-
     // * -------------------------- Fn: Render Players -------------------------- * //
     function renderPlayers(): void {
       // * Render map
@@ -235,7 +176,9 @@ export default function Home() {
 
         const totalPercentScale = scale * 100
 
-        setPercentScale(Math.round(totalPercentScale))
+        let percentScale = Math.round(totalPercentScale)
+
+        spanScale.textContent = String(percentScale)
 
         createMap({ scale, translateCanvasPosition })
       }
@@ -247,7 +190,9 @@ export default function Home() {
 
         const totalPercentScale = scale * 100
 
-        setPercentScale(Math.round(totalPercentScale))
+        let percentScale = Math.round(totalPercentScale)
+
+        spanScale.textContent = String(percentScale)
 
         createMap({ scale, translateCanvasPosition })
       }
@@ -260,9 +205,7 @@ export default function Home() {
 
         mouseDown = true
         
-        if (mouseDown) {
-          canvas.style.cursor = 'move'
-        }
+        canvas.style.cursor = 'move'
 
         dragOffset.x = clientX - translateCanvasPosition.x
         dragOffset.y = clientY - translateCanvasPosition.y
@@ -282,8 +225,11 @@ export default function Home() {
           (mousePositionY * totalMetersOfCanvasY) / totalPixelsOfCanvasY
         ]
 
-        setMousePositionX(convertPixelsToMetersX.toFixed(2))
-        setMousePositionY(convertPixelsToMetersY.toFixed(2))
+        let resultMousePositionOnMetersX = convertPixelsToMetersX.toFixed(2)
+        let resultMousePositionOnMetersY = convertPixelsToMetersY.toFixed(2)
+
+        spanPositionX.textContent = resultMousePositionOnMetersX
+        spanPositionY.textContent = resultMousePositionOnMetersY
 
         if (mouseDown) {
           translateCanvasPosition.x = clientX - dragOffset.x
@@ -322,11 +268,9 @@ export default function Home() {
 
     // * ------------------- Render map, players and others ------------------- * //
     createMap({ scale, translateCanvasPosition })
-    const keyboardListener = createKeyboardListener()
-    keyboardListener.subscribe(movePlayer)
-    addPlayer({ playerId: 'Leh', playerX: playerX, playerY: playerY })
+    addPlayer({ playerId: 'Ale', playerX: playerX, playerY: playerY })
     renderPlayers()
-  }, [])
+  }, [players])
 
   return (
     <div className={styles.container}>
@@ -335,11 +279,16 @@ export default function Home() {
 
         <div className={styles.commandWrapper}>
           <div className={styles.percentage}>
-            <span>{percentScale}%</span>
+            <span id='scale'>100</span><span>%</span>
           </div>
-          <div className={styles.position}>
-            <span>x: {mousePositionX}</span>
-            <span>y: {mousePositionY}</span>
+          <div className={styles.positions}>
+            <div className={styles.position}>
+              <span>x:</span><span id='mousePositionX'></span>
+            </div>
+
+            <div className={styles.position}>
+              <span>y:</span><span id='mousePositionY'></span>
+            </div>
           </div>
 
           <div className={styles.buttons}>
