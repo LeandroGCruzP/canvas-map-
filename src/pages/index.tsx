@@ -8,6 +8,8 @@ type Players = {
   [playerId: string]: {
     x: number
     y: number
+    color: string
+    drawColor: string
   }
 }
 
@@ -27,7 +29,7 @@ type CreateMapArgs = {
   }
 }
 
-type Player = {
+type PlayerAPI = {
   id: string
   position: {
     x: number
@@ -39,8 +41,14 @@ export default function Home() {
   const socket = useSocket()
 
   const playersRendered = useMemo(() => {
-    const players: Players = {}
-
+    const players: Players = {
+      'Tiago': {
+        x: 615,
+        y: 45,
+        color:'#7986cb',
+        drawColor:'#7986cb',
+      }
+    }
     return players
   }, [])
 
@@ -57,12 +65,14 @@ export default function Home() {
         roomWidth: 887 // width map centimeter)
       })
 
-      socket.on('move', (data: Player) => {
+      socket.on('move', (data: PlayerAPI) => {
         function movementListener(movement: any) {
           if(playersRendered) {
             playersRendered[movement.tag] = {
               x: movement.x,
-              y: movement.y
+              y: movement.y,
+              color:'#7986cb',
+              drawColor:'#7986cb',
             }
           }
         }
@@ -96,7 +106,9 @@ export default function Home() {
     const dragOffset = { x: 0, y: 0 }
     const scaleMultiplier = 0.8
     const [totalMetersOfCanvasX, totalMetersOfCanvasY] = [15.95, 8.87]
-
+    const bodyToShape = 10
+    
+    let [mouseX, mouseY] = [0, 0]
     let scale = 1
     let mouseDown = false
 
@@ -129,6 +141,13 @@ export default function Home() {
       }
     }
 
+    // * --------------------------- Define Shape --------------------------- * //
+    function defineShape(points: { x: number, y: number }) {
+      context.beginPath()
+      context.arc(points.x, points.y, bodyToShape, 0, 2 * Math.PI)
+      context.closePath()
+    }
+
     // * -------------------------- Fn: Render Players -------------------------- * //
     function renderPlayers(): void {
       // * Render map
@@ -138,22 +157,46 @@ export default function Home() {
       
       for (const playerId in playersRendered) {
         const player = playersRendered[playerId]
-        const sizePlayer = 10
 
-        // * Creating player
-        context.drawImage(image, player.x - 5, player.y)
+        defineShape({x: player.x, y: player.y})
+        context.fillStyle = player.drawColor
+        context.fill()
+        context.stroke()
 
-        // * Text below player
-        context.fillStyle = 'white'
-        context.font = '15px Roboto'
+        // * Text
+        context.fillStyle = "#FFF"
         context.textAlign = 'center'
-        context.fillText(playerId, player.x, player.y + sizePlayer * 3)
+        context.font = "14px verdana"
+        context.fillText(
+          playerId,
+          player.x,
+          player.y + bodyToShape + 20
+        )
+
+        if (player.color !== player.drawColor) {
+          context.textAlign = 'right'
+          context.fillText(
+            'ID: ' + playerId,
+            player.x,
+            player.y + bodyToShape + 40
+          )
+          context.fillText(
+            'x: ' + player.x,
+            player.x,
+            player.y + bodyToShape + 60
+          )
+          context.fillText(
+            'y: ' + player.y,
+            player.x,
+            player.y + bodyToShape + 80
+          )
+        }
       }
 
       requestAnimationFrame(renderPlayers)
     }
 
-    // * ------------ Event listener (buttons): zoom in and zoom out ------------ * //
+    // * ------------ Event listener (buttons - scroll): zoom in and zoom out ------------ * //
     buttonPlus.addEventListener('click', () => {
       if (scale < 1.95) { // * max: 195%
         scale = scale / scaleMultiplier
@@ -182,7 +225,6 @@ export default function Home() {
       }
     }, false)
 
-    // * ------------ Event listener (scroll): zoom in and zoom out ------------ * //
     canvas.addEventListener('wheel', event => {
       if(event.deltaY < 0 && scale < 1.95) {
         scale = scale / scaleMultiplier
@@ -211,7 +253,7 @@ export default function Home() {
     })
 
     // * ------------- Event listener (mouse): dragging and moving ------------- * //
-    const mouseEvents: MouseEventProps = {
+    const mouseEvents: MouseEventProps = {      
       mousedown() {
         const { clientX, clientY } = window.event as MouseEvent
 
@@ -277,6 +319,33 @@ export default function Home() {
     }
 
     new ResizeObserver(containerSize).observe(div)
+
+    // * ----------------------- View player information ----------------------- * //
+    canvas.addEventListener("mousemove", event => {
+      event.preventDefault()
+      event.stopPropagation()
+
+      mouseX = event.clientX
+      mouseY = event.clientY
+
+      canvas.style.cursor = 'inherit'
+
+      for (const playerId in playersRendered) {
+        const player = playersRendered[playerId]
+
+        defineShape({ x: player.x, y: player.y })
+
+        if (context.isPointInPath(mouseX, mouseY)) {
+          canvas.style.cursor = 'pointer'
+          player.drawColor = '#9fa8da'
+        }
+         else {
+          player.drawColor = player.color
+        }
+      }
+
+      // renderPlayers()
+    })
 
     // * ------------------- Render map, players and others ------------------- * //
     createMap({ scale, translateCanvasPosition })
