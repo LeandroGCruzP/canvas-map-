@@ -7,31 +7,21 @@ type ShapeData = {
   points: {
     x: number
     y: number
-  }[]
+  }
 }
 
-let triangle1 = {
+let player1 = {
   name: "Tiago",
   color: "#7986cb",
   drawColor: "#7986cb",
-  points: [
-    { x: 300, y: 150 },
-    { x: 400, y: 150 },
-    { x: 400, y: 250 },
-    { x: 300, y: 250 }, // 350 x 200
-  ],
+  points: { x: 350, y: 200 },
 }
 
-let triangle2 = {
+let player2 = {
   name: "Leh",
   color: "#7986cb",
   drawColor: "#7986cb",
-  points: [
-    { x: 600, y: 150 },
-    { x: 700, y: 150 },
-    { x: 700, y: 250 },
-    { x: 600, y: 250 }, // 650 x 200
-  ],
+  points: { x: 650, y: 200 },
 }
 
 export default function Map() {
@@ -40,10 +30,11 @@ export default function Map() {
     const context = canvas.getContext("2d") as CanvasRenderingContext2D
     const canvasWidth = canvas.width
     const canvasHeight = canvas.height
+    const bodyToShape = 120
 
     let [mouseX, mouseY] = [0, 0]
     let shapes: ShapeData[] = []
-    shapes.push(triangle1, triangle2)
+    shapes.push(player1, player2)
 
     function reOffset() {
       const BB = canvas.getBoundingClientRect()
@@ -84,14 +75,9 @@ export default function Map() {
       drawAll()
     })
 
-    function defineShape(points: { x: number, y: number }[]) {
+    function defineShape(points: { x: number, y: number }) {
       context.beginPath()
-      context.moveTo(points[0].x, points[0].y)
-
-      for (let index = 1; index < points.length; index++) {
-        context.lineTo(points[index].x, points[index].y)
-      }
-
+      context.arc(points.x, points.y, bodyToShape, 0, 2 * Math.PI)
       context.closePath()
     }
 
@@ -110,26 +96,26 @@ export default function Map() {
         context.font = "14px verdana"
         context.fillText(
           shape.name,
-          (shape.points[3].x + shape.points[2].x) / 2,
-          shape.points[3].y + 15
+          shape.points.x,
+          shape.points.y + bodyToShape + 20
         )
 
         if (shape.color !== shape.drawColor) {
           context.textAlign = 'right'
           context.fillText(
             'ID: ' + shape.name,
-            (shape.points[3].x + shape.points[2].x) / 2,
-            shape.points[3].y + 35
+            shape.points.x,
+            shape.points.y + bodyToShape + 40
           )
           context.fillText(
-            'x: ' + shape.points[0].x,
-            (shape.points[3].x + shape.points[2].x) / 2,
-            shape.points[3].y + 55
+            'x: ' + shape.points.x,
+            shape.points.x,
+            shape.points.y + bodyToShape + 60
           )
           context.fillText(
-            'y: ' + shape.points[0].y,
-            (shape.points[3].x + shape.points[2].x) / 2,
-            shape.points[3].y + 75
+            'y: ' + shape.points.y,
+            shape.points.x,
+            shape.points.y + bodyToShape + 80
           )
         }
       }
