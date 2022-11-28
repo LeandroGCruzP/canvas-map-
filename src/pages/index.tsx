@@ -47,6 +47,12 @@ export default function Home() {
         y: 45,
         color:'#7986cb',
         drawColor:'#7986cb',
+      },
+      'Chile': {
+        x: 785,
+        y: 400,
+        color:'#7986cb',
+        drawColor:'#7986cb',
       }
     }
     return players
@@ -112,7 +118,7 @@ export default function Home() {
     let scale = 1
     let mouseDown = false
 
-    // * --------------------------- Fn: Creating map --------------------------- * //
+    // * -------------------------------- Fn: Creating map -------------------------------- * //
     function createMap({ scale, translateCanvasPosition }: CreateMapArgs): void {
       const image = new Image()
       image.src = './aceno.png'
@@ -141,54 +147,86 @@ export default function Home() {
       }
     }
 
-    // * --------------------------- Define Shape --------------------------- * //
+    // * ---------------------------------- Define Shape ---------------------------------- * //
     function defineShape(points: { x: number, y: number }) {
       context.beginPath()
       context.arc(points.x, points.y, bodyToShape, 0, 2 * Math.PI)
       context.closePath()
     }
 
-    // * -------------------------- Fn: Render Players -------------------------- * //
+    // * ------------------------------- Fn: Render Players ------------------------------- * //
     function renderPlayers(): void {
       // * Render map
       const image = new Image()
       image.src = './player.png'
       createMap({ scale, translateCanvasPosition })
-      
+
+      // * Render players
       for (const playerId in playersRendered) {
         const player = playersRendered[playerId]
 
+        // * Player
         defineShape({x: player.x, y: player.y})
         context.fillStyle = player.drawColor
         context.fill()
+        context.strokeStyle = '#FFF'
         context.stroke()
 
+        // * Container Text
+        const heightContainer = 15
+        const widthContainer = 50
+        const positionContainerX = player.x - widthContainer / 2
+        const positionContainerY = player.y + bodyToShape + 9
+
+        context.fillStyle = '#FFF'
+        context.fillRect(positionContainerX, positionContainerY, widthContainer, heightContainer)
+
         // * Text
-        context.fillStyle = "#FFF"
+        const text = playerId
+        const positionTextX = player.x
+        const positionTextY = player.y + bodyToShape + 20
+
+        context.fillStyle = '#000'
         context.textAlign = 'center'
-        context.font = "14px verdana"
-        context.fillText(
-          playerId,
-          player.x,
-          player.y + bodyToShape + 20
-        )
+        context.font = '14px verdana'
+        context.fillText(text, positionTextX, positionTextY)
 
         if (player.color !== player.drawColor) {
-          context.textAlign = 'right'
+          // * Container Text
+          const heightContainer = 55
+          const widthContainer = 100
+          const paddingContainer = 7
+          const positionContainerX = player.x - (widthContainer + paddingContainer) / 2
+          const positionContainerY = player.y + bodyToShape + 28
+
+          context.fillStyle = '#FFF'
+          context.fillRect(positionContainerX, positionContainerY, widthContainer, heightContainer)
+          
+          // * Text
+          const text = playerId
+          const positionTextX = player.x - widthContainer / 2
+          const positionTextY = player.y
+          const firstPositionTextY = player.y + bodyToShape + 42
+          const secondPositionTextY = player.y + bodyToShape + 58
+          const thirdPositionTextY = player.y + bodyToShape + 76
+
+          context.fillStyle = '#000'
+          context.textAlign = 'left'
+          context.font = '14px verdana'
           context.fillText(
-            'ID: ' + playerId,
-            player.x,
-            player.y + bodyToShape + 40
+            'ID: ' + text,
+            positionTextX,
+            firstPositionTextY
           )
           context.fillText(
-            'x: ' + player.x,
-            player.x,
-            player.y + bodyToShape + 60
+            'x: ' + positionTextX,
+            positionTextX,
+            secondPositionTextY
           )
           context.fillText(
-            'y: ' + player.y,
-            player.x,
-            player.y + bodyToShape + 80
+            'y: ' + positionTextY,
+            positionTextX,
+            thirdPositionTextY
           )
         }
       }
@@ -252,7 +290,7 @@ export default function Home() {
       
     })
 
-    // * ------------- Event listener (mouse): dragging and moving ------------- * //
+    // * ------------------ Event listener (mouse): dragging and moving ------------------ * //
     const mouseEvents: MouseEventProps = {      
       mousedown() {
         const { clientX, clientY } = window.event as MouseEvent
@@ -310,7 +348,7 @@ export default function Home() {
       canvas.addEventListener( eventName, mouseEvents[eventName as keyof MouseEventProps])
     })
 
-    // * ---------------------------- Resize canvas ---------------------------- * //
+    // * --------------------------------- Resize canvas --------------------------------- * //
     function containerSize() {
       canvasSize.height = div.offsetHeight
       canvasSize.width = div.offsetWidth
@@ -320,7 +358,7 @@ export default function Home() {
 
     new ResizeObserver(containerSize).observe(div)
 
-    // * ----------------------- View player information ----------------------- * //
+    // * ---------------------------- View player information ---------------------------- * //
     canvas.addEventListener("mousemove", event => {
       event.preventDefault()
       event.stopPropagation()
@@ -336,18 +374,30 @@ export default function Home() {
         defineShape({ x: player.x, y: player.y })
 
         if (context.isPointInPath(mouseX, mouseY)) {
+          // * Player on hover
           canvas.style.cursor = 'pointer'
           player.drawColor = '#9fa8da'
-        }
-         else {
+        } else {
           player.drawColor = player.color
         }
       }
 
-      // renderPlayers()
+      for (const playerId in playersRendered) {
+        const player = playersRendered[playerId]
+
+        defineShape({ x: player.x, y: player.y })
+
+        if (context.isPointInPath(mouseX, mouseY)) {
+          // * Player on hover
+          canvas.style.cursor = 'pointer'
+          player.drawColor = '#9fa8da'
+        } else {
+          player.drawColor = player.color
+        }
+      }
     })
 
-    // * ------------------- Render map, players and others ------------------- * //
+    // * ------------------------ Render map, players and others ------------------------ * //
     createMap({ scale, translateCanvasPosition })
     renderPlayers()
   }, [playersRendered])
