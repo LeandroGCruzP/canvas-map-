@@ -2,59 +2,29 @@
 
 import { useEffect, useMemo } from 'react'
 import { useSocket } from '../hook/useSocket'
+import { CreateMapArgs, MouseEventProps, PlayerAPI, Players } from '../interfaces/Data'
 import styles from '../styles/Home.module.css'
 
-type Players = {
-  [playerId: string]: {
-    x: number
-    y: number
-    color: string
-    drawColor: string
-  }
-}
-
-type MouseEventProps = {
-  mousedown(): void
-  mouseup(): void
-  mouseover(): void
-  mouseout(): void
-  mousemove(): void
-}
-
-type CreateMapArgs = {
-  scale: number
-  translateCanvasPosition: {
-    x: number
-    y: number
-  }
-}
-
-type PlayerAPI = {
-  id: string
-  position: {
-    x: number
-    y: number
-  }
-}
+const PLAYER_COLOR = '#7986CB'
+const PLAYER_COLOR_HOVER = '#9FA8DA'
+const WHITE_COLOR = '#FFF'
+const FONT_COLOR = '#000'
 
 export default function Home() {
   const socket = useSocket()
 
+  const totalMetersCanvas = useMemo(() => {
+    const meters = { x: 15.95, y: 8.87 } // TODO: Receive value from server
+
+    return meters
+  }, [])
+  
   const playersRendered = useMemo(() => {
-    const players: Players = {
-      'Tiago': {
-        x: 615,
-        y: 45,
-        color:'#7986cb',
-        drawColor:'#7986cb',
-      },
-      'Chile': {
-        x: 785,
-        y: 400,
-        color:'#7986cb',
-        drawColor:'#7986cb',
-      }
+    const players: Players = { 
+      // 'Tiago': { x: 615, y: 45, color: PLAYER_COLOR, drawColor: PLAYER_COLOR, borderColor: PLAYER_COLOR, borderColorSelected: PLAYER_COLOR },
+      // 'Chile': { x: 787, y: 400, color: PLAYER_COLOR, drawColor: PLAYER_COLOR, borderColor: PLAYER_COLOR, borderColorSelected: PLAYER_COLOR },
     }
+    
     return players
   }, [])
 
@@ -77,8 +47,10 @@ export default function Home() {
             playersRendered[movement.tag] = {
               x: movement.x,
               y: movement.y,
-              color:'#7986cb',
-              drawColor:'#7986cb',
+              color: PLAYER_COLOR,
+              drawColor: PLAYER_COLOR,
+              borderColor: PLAYER_COLOR,
+              borderColorSelected: PLAYER_COLOR,
             }
           }
         }
@@ -104,162 +76,149 @@ export default function Home() {
     const spanPositionX = document.getElementById('mousePositionX') as HTMLSpanElement
     const spanPositionY = document.getElementById('mousePositionY') as HTMLSpanElement
     const spanScale = document.getElementById('scale') as HTMLSpanElement
+    const h3PlayerId = document.getElementById('playerId') as HTMLSpanElement
+    const spanPositionPlayerX = document.getElementById('positionPlayerX') as HTMLSpanElement
+    const spanPositionPlayerY = document.getElementById('positionPlayerY') as HTMLSpanElement
 
-    let [widthFactor, heightFactor] = [0, 0]
-    let [totalPixelsOfCanvasX, totalPixelsOfCanvasY] = [0, 0]
-    const canvasSize = { height: 0, width: 0 }
-    const translateCanvasPosition = { x: 0, y: 0 }
-    const dragOffset = { x: 0, y: 0 }
-    const scaleMultiplier = 0.8
-    const [totalMetersOfCanvasX, totalMetersOfCanvasY] = [15.95, 8.87]
-    const bodyToShape = 10
-    
-    let [mouseX, mouseY] = [0, 0]
+    let totalPixelsCanvas = { x: 0, y: 0 }
+
+    let translatePosition = { x: 0, y: 0 } // * Current canvas position after dragging
+    let dragPosition = { x: 0, y: 0 } // * Cursor position when dragging
     let scale = 1
+    const scaleMultiplier = 0.8
+
+    const shapeSize = 10
+
+    let mousePosition = { x: 0, y: 0 } // * Mouse position on canvas
     let mouseDown = false
 
-    // * -------------------------------- Fn: Creating map -------------------------------- * //
-    function createMap({ scale, translateCanvasPosition }: CreateMapArgs): void {
+    let cut_id = ''
+
+    function createMap({ scale, translate }: CreateMapArgs): void {
       const image = new Image()
       image.src = './aceno.png'
 
       image.onload = () => {
-        const { width: widthImage, height: heightImage } = image
-        const [relativeWidthOfImageByScale, relativeHeightOfImageByScale] = [
-          Math.round(widthImage * scale),
-          Math.round(heightImage * scale),
-        ]
-        widthFactor = widthImage / relativeWidthOfImageByScale
-        heightFactor = heightImage / relativeHeightOfImageByScale
-
-        totalPixelsOfCanvasX = widthImage
-        totalPixelsOfCanvasY = heightImage
-
         canvas.height = div.offsetHeight
         canvas.width = div.offsetWidth
 
-        context.clearRect(0, 0, widthImage, heightImage)
+        const { width: widthImage, height: heightImage } = image
 
-        context.translate(translateCanvasPosition.x, translateCanvasPosition.y)
+        totalPixelsCanvas.x = widthImage
+        totalPixelsCanvas.y = heightImage
+
+        context.clearRect(0, 0, widthImage, heightImage)
+        context.translate(translate.x, translate.y)
         context.scale(scale, scale)
         context.drawImage(image, 0, 0, widthImage, heightImage)
         context.restore()
       }
     }
 
-    // * ---------------------------------- Define Shape ---------------------------------- * //
-    function defineShape(points: { x: number, y: number }) {
+    function createPlayer(player: { id: string, x: number, y: number, drawColor: string, borderColorSelected: string }) {
+      const heightContainer = 15
+      const widthContainer = 50
+      const positionContainerX = player.x - widthContainer / 2
+      const positionContainerY = player.y + shapeSize + 9
+      const text = player.id
+      const positionTextX = player.x
+      const positionTextY = player.y + shapeSize + 20
+
+      // * Player
       context.beginPath()
-      context.arc(points.x, points.y, bodyToShape, 0, 2 * Math.PI)
+      context.arc(player.x, player.y, shapeSize, 0, 2 * Math.PI)
+      context.fillStyle = player.drawColor
+      context.fill()
+      context.strokeStyle = player.borderColorSelected
+      context.stroke()
       context.closePath()
+
+      // * Container ID
+      context.fillStyle = WHITE_COLOR
+      context.fillRect(positionContainerX, positionContainerY, widthContainer, heightContainer)
+
+      // * Text ID
+      context.fillStyle = FONT_COLOR
+      context.textAlign = 'center'
+      context.font = '14px verdana'
+      context.fillText(text, positionTextX, positionTextY)
     }
 
-    // * ------------------------------- Fn: Render Players ------------------------------- * //
     function renderPlayers(): void {
-      // * Render map
-      const image = new Image()
-      image.src = './player.png'
-      createMap({ scale, translateCanvasPosition })
-
-      // * Render players
+      createMap({ scale, translate: translatePosition })
+      
       for (const playerId in playersRendered) {
         const player = playersRendered[playerId]
 
-        // * Player
-        defineShape({x: player.x, y: player.y})
-        context.fillStyle = player.drawColor
-        context.fill()
-        context.strokeStyle = '#FFF'
-        context.stroke()
-
-        // * Container Text
-        const heightContainer = 15
-        const widthContainer = 50
-        const positionContainerX = player.x - widthContainer / 2
-        const positionContainerY = player.y + bodyToShape + 9
-
-        context.fillStyle = '#FFF'
-        context.fillRect(positionContainerX, positionContainerY, widthContainer, heightContainer)
-
-        // * Text
-        const text = playerId
-        const positionTextX = player.x
-        const positionTextY = player.y + bodyToShape + 20
-
-        context.fillStyle = '#000'
-        context.textAlign = 'center'
-        context.font = '14px verdana'
-        context.fillText(text, positionTextX, positionTextY)
+        createPlayer({ id: playerId, x: player.x, y: player.y, drawColor: player.drawColor, borderColorSelected: player.borderColorSelected })
 
         if (player.color !== player.drawColor) {
-          // * Container Text
           const heightContainer = 55
           const widthContainer = 100
           const paddingContainer = 7
           const positionContainerX = player.x - (widthContainer + paddingContainer) / 2
-          const positionContainerY = player.y + bodyToShape + 28
-
-          context.fillStyle = '#FFF'
-          context.fillRect(positionContainerX, positionContainerY, widthContainer, heightContainer)
-          
-          // * Text
+          const positionContainerY = player.y + shapeSize + 28
           const text = playerId
           const positionTextX = player.x - widthContainer / 2
-          const positionTextY = player.y
-          const firstPositionTextY = player.y + bodyToShape + 42
-          const secondPositionTextY = player.y + bodyToShape + 58
-          const thirdPositionTextY = player.y + bodyToShape + 76
+          const firstPositionTextY = player.y + shapeSize + 42
+          const secondPositionTextY = player.y + shapeSize + 58
+          const thirdPositionTextY = player.y + shapeSize + 76
+          
+          const { meterX, meterY } = convertPixelsToMeters({ x: mousePosition.x, y: mousePosition.y })
 
-          context.fillStyle = '#000'
+          // * Container information
+          context.fillStyle = WHITE_COLOR
+          context.fillRect(positionContainerX, positionContainerY, widthContainer, heightContainer)
+          
+          // * Text information
+          context.fillStyle = FONT_COLOR
           context.textAlign = 'left'
           context.font = '14px verdana'
-          context.fillText(
-            'ID: ' + text,
-            positionTextX,
-            firstPositionTextY
-          )
-          context.fillText(
-            'x: ' + positionTextX,
-            positionTextX,
-            secondPositionTextY
-          )
-          context.fillText(
-            'y: ' + positionTextY,
-            positionTextX,
-            thirdPositionTextY
-          )
+          context.fillText('ID: ' + text, positionTextX, firstPositionTextY)
+          context.fillText('x: ' + meterX, positionTextX, secondPositionTextY)
+          context.fillText('y: ' + meterY, positionTextX, thirdPositionTextY)
+        }
+
+        const playerSelectedToShowInfo = playersRendered[cut_id]
+
+        if(playerSelectedToShowInfo) {
+          playerSelectedToShowInfo.borderColorSelected = WHITE_COLOR
+
+          const convertPixelsToMetersX = playerSelectedToShowInfo.x * totalMetersCanvas.x / totalPixelsCanvas.x
+          const convertPixelsToMetersY = playerSelectedToShowInfo.y * totalMetersCanvas.y / totalPixelsCanvas.y
+
+          const [meterX, meterY] = [
+            convertPixelsToMetersX.toFixed(2),
+            convertPixelsToMetersY.toFixed(2)
+          ]
+
+          h3PlayerId.textContent = cut_id
+          spanPositionPlayerX.textContent = String(meterX)
+          spanPositionPlayerY.textContent = String(meterY)
         }
       }
 
       requestAnimationFrame(renderPlayers)
     }
 
-    // * ------------ Event listener (buttons - scroll): zoom in and zoom out ------------ * //
+    // * Event listener (buttons - scroll): zoom in and zoom out 
     buttonPlus.addEventListener('click', () => {
-      if (scale < 1.95) { // * max: 195%
+      if (scale < 1.95) { // ? max: 195%
         scale = scale / scaleMultiplier
 
-        const totalPercentScale = scale * 100
-
-        let percentScale = Math.round(totalPercentScale)
+        let percentScale = Math.round(scale * 100)
 
         spanScale.textContent = String(percentScale)
-
-        createMap({ scale, translateCanvasPosition })
       }
     }, false)
 
     buttonMinus.addEventListener('click', () => {
-      if (scale > 0.33) { // * min: 33%
+      if (scale > 0.33) { // ? min: 33%
         scale = scale * scaleMultiplier
 
-        const totalPercentScale = scale * 100
-
-        let percentScale = Math.round(totalPercentScale)
+        let percentScale = Math.round(scale * 100)
 
         spanScale.textContent = String(percentScale)
-
-        createMap({ scale, translateCanvasPosition })
       }
     }, false)
 
@@ -267,30 +226,21 @@ export default function Home() {
       if(event.deltaY < 0 && scale < 1.95) {
         scale = scale / scaleMultiplier
 
-        const totalPercentScale = scale * 100
-
-        let percentScale = Math.round(totalPercentScale)
+        let percentScale = Math.round(scale * 100)
 
         spanScale.textContent = String(percentScale)
-
-        createMap({ scale, translateCanvasPosition })
       } 
       
-      else if (event.deltaY > 0 && scale > 0.33) {
+      if (event.deltaY > 0 && scale > 0.33) {
         scale = scale * scaleMultiplier
 
-        const totalPercentScale = scale * 100
-
-        let percentScale = Math.round(totalPercentScale)
+        let percentScale = Math.round(scale * 100)
 
         spanScale.textContent = String(percentScale)
-
-        createMap({ scale, translateCanvasPosition })
       }
-      
     })
 
-    // * ------------------ Event listener (mouse): dragging and moving ------------------ * //
+    // * Event listener (mouse): dragging - moving - show info 
     const mouseEvents: MouseEventProps = {      
       mousedown() {
         const { clientX, clientY } = window.event as MouseEvent
@@ -299,108 +249,96 @@ export default function Home() {
         
         canvas.style.cursor = 'move'
 
-        dragOffset.x = clientX - translateCanvasPosition.x
-        dragOffset.y = clientY - translateCanvasPosition.y
+        dragPosition.x = clientX - translatePosition.x
+        dragPosition.y = clientY - translatePosition.y
       },
       mousemove() {
         const { clientX, clientY, offsetX, offsetY } = window.event as MouseEvent
 
-        const mousePositionY = Math.round(
-          (offsetY - translateCanvasPosition.y) * heightFactor
-        )
-        const mousePositionX = Math.round(
-          (offsetX - translateCanvasPosition.x) * widthFactor
-        )
+        const { meterX, meterY } = convertPixelsToMeters({ x: mousePosition.x, y: mousePosition.y })
 
-        const [convertPixelsToMetersX, convertPixelsToMetersY] = [
-          (mousePositionX * totalMetersOfCanvasX) / totalPixelsOfCanvasX,
-          (mousePositionY * totalMetersOfCanvasY) / totalPixelsOfCanvasY
-        ]
-
-        let resultMousePositionOnMetersX = convertPixelsToMetersX.toFixed(2)
-        let resultMousePositionOnMetersY = convertPixelsToMetersY.toFixed(2)
-
-        spanPositionX.textContent = resultMousePositionOnMetersX
-        spanPositionY.textContent = resultMousePositionOnMetersY
+        spanPositionX.textContent = meterX
+        spanPositionY.textContent = meterY
 
         if (mouseDown) {
-          translateCanvasPosition.x = clientX - dragOffset.x
-          translateCanvasPosition.y = clientY - dragOffset.y
-          createMap({ scale, translateCanvasPosition })
+          translatePosition.x = clientX - dragPosition.x
+          translatePosition.y = clientY - dragPosition.y
+        }
+
+        // * View more information on hover player
+        mousePosition.x = offsetX
+        mousePosition.y = offsetY
+
+        canvas.style.cursor = 'inherit'
+
+        for (const playerId in playersRendered) {
+          const player = playersRendered[playerId]
+
+          createPlayer({ id: playerId, x: player.x, y: player.y, drawColor: player.drawColor, borderColorSelected: player.borderColorSelected })
+
+          if (context.isPointInPath(mousePosition.x, mousePosition.y)) {
+            canvas.style.cursor = 'pointer'
+            player.drawColor = PLAYER_COLOR_HOVER
+          } else {
+            player.drawColor = player.color
+          }
         }
       },
       mouseup() {
         canvas.style.cursor = 'inherit'
 
         mouseDown = false
+
+        // * Show more information on sidebar when click on player
+        for (const playerId in playersRendered) {
+          const player = playersRendered[playerId]
+
+          createPlayer({ id: playerId, x: player.x, y: player.y, drawColor: player.drawColor, borderColorSelected: player.borderColorSelected })
+
+          if (context.isPointInPath(mousePosition.x, mousePosition.y)) {
+            cut_id = playerId
+          } else {
+            player.borderColorSelected = player.borderColor
+          }
+        }
       },
-      mouseover() {
+      mouseover() { 
         mouseDown = false
       },
       mouseout() {
         canvas.style.cursor = 'inherit'
 
         mouseDown = false
-      },
+      }
     }
 
-    Object.keys(mouseEvents).forEach((eventName) => {
+    Object.keys(mouseEvents).forEach(eventName => {
       canvas.addEventListener( eventName, mouseEvents[eventName as keyof MouseEventProps])
     })
 
-    // * --------------------------------- Resize canvas --------------------------------- * //
-    function containerSize() {
-      canvasSize.height = div.offsetHeight
-      canvasSize.width = div.offsetWidth
+    // * ------------------------------------- Utils ------------------------------------- * //
+    function convertPixelsToMeters(position: { x: number, y: number }): {meterX: string, meterY: string} {
+      const [mousePositionX, mousePositionY] = [
+        (position.x - translatePosition.x) * (totalPixelsCanvas.x / (totalPixelsCanvas.x * scale)),
+        (position.y - translatePosition.y) * (totalPixelsCanvas.y / (totalPixelsCanvas.y * scale))
+      ]
 
-      createMap({ scale, translateCanvasPosition })
+      const [convertPixelsToMetersX, convertPixelsToMetersY] = [
+        mousePositionX * totalMetersCanvas.x / totalPixelsCanvas.x,
+        mousePositionY * totalMetersCanvas.y / totalPixelsCanvas.y
+      ]
+
+      const [meterX, meterY] = [
+        convertPixelsToMetersX.toFixed(2),
+        convertPixelsToMetersY.toFixed(2)
+      ]
+
+      return { meterX, meterY }
     }
 
-    new ResizeObserver(containerSize).observe(div)
-
-    // * ---------------------------- View player information ---------------------------- * //
-    canvas.addEventListener("mousemove", event => {
-      event.preventDefault()
-      event.stopPropagation()
-
-      mouseX = event.clientX
-      mouseY = event.clientY
-
-      canvas.style.cursor = 'inherit'
-
-      for (const playerId in playersRendered) {
-        const player = playersRendered[playerId]
-
-        defineShape({ x: player.x, y: player.y })
-
-        if (context.isPointInPath(mouseX, mouseY)) {
-          // * Player on hover
-          canvas.style.cursor = 'pointer'
-          player.drawColor = '#9fa8da'
-        } else {
-          player.drawColor = player.color
-        }
-      }
-
-      for (const playerId in playersRendered) {
-        const player = playersRendered[playerId]
-
-        defineShape({ x: player.x, y: player.y })
-
-        if (context.isPointInPath(mouseX, mouseY)) {
-          // * Player on hover
-          canvas.style.cursor = 'pointer'
-          player.drawColor = '#9fa8da'
-        } else {
-          player.drawColor = player.color
-        }
-      }
-    })
-
-    // * ------------------------ Render map, players and others ------------------------ * //
-    createMap({ scale, translateCanvasPosition })
+    createMap({ scale, translate: translatePosition })
     renderPlayers()
-  }, [playersRendered])
+  }, [playersRendered, totalMetersCanvas])
 
   return (
     <div className={styles.container}>
@@ -429,16 +367,16 @@ export default function Home() {
       </div>
 
       <div className={styles.sidebar}>
-        <h3>Actions</h3>
+        <div className={styles.selection}>
+          <h3>Player:</h3><h3 id='playerId'></h3>
+        </div>
 
         <div>
           <div className={styles.selection}>
-            <input type='checkbox' name='selection1' id='selection1' />
-            <span>x: 15,95 ~ 1377</span>
+            <span>x:</span><span id='positionPlayerX'></span>
           </div>
           <div className={styles.selection}>
-            <input type='checkbox' name='selection2' id='selection2' />
-            <span>y: 8,87 ~ 782</span>
+            <span>y:</span><span id='positionPlayerY'></span>
           </div>
         </div>
       </div>
