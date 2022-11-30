@@ -269,7 +269,9 @@ export default function Home() {
         mousePosition.x = offsetX
         mousePosition.y = offsetY
 
-        canvas.style.cursor = 'inherit'
+        if(canvas.style.cursor === 'pointer') {
+          canvas.style.cursor = 'inherit'
+        }
 
         for (const playerId in playersRendered) {
           const player = playersRendered[playerId]
