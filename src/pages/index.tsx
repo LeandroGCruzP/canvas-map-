@@ -7,6 +7,7 @@ import styles from '../styles/Home.module.css'
 
 const PLAYER_COLOR = '#7986CB'
 const PLAYER_COLOR_HOVER = '#9FA8DA'
+const ROOM_COLOR = 'rgba(121, 134, 203, 0.1)'
 const WHITE_COLOR = '#FFF'
 const FONT_COLOR = '#000'
 
@@ -41,7 +42,8 @@ export default function Home() {
         width: 1377, // width canvas (px)
         height: 782, // height canvas (px)
         roomHeight: 1595, // height map (centimeter)
-        roomWidth: 887 // width map centimeter)
+        roomWidth: 887, // width map centimeter)
+        companyId: 'company1'
       })
 
       socket.on('move', (data: PlayerAPI) => {
@@ -61,11 +63,15 @@ export default function Home() {
         movementListener({ tag: data.id, x: data.position.x, y: data.position.y })
       })
 
-      socket.on('bounds', (data: { roomId: string, positions: { x: number, y: number }[] }) => {
-        function newRoomListener(room: { roomId: string, positions: { x: number, y: number }[] }) {
-          roomsRendered[room.roomId] = {
-            positions: room.positions
-          }
+      socket.on('bounds', (data: { companyId: string, roomId: string, positions: { x: number, y: number }[] }[]) => {
+        console.log(data);
+        
+        function newRoomListener(rooms: { companyId: string, roomId: string, positions: { x: number, y: number }[] }[]) {
+          rooms.map(room => 
+            roomsRendered[room.roomId] = {
+              positions: room.positions
+            }
+          )
         }
 
         newRoomListener(data)
@@ -283,8 +289,10 @@ export default function Home() {
         room.positions.map(position => context.lineTo(position.x, position.y))
         context.lineWidth = lineWidth
         context.lineCap = lineCap
+        context.fillStyle = ROOM_COLOR
         context.strokeStyle = strokeStyle
         context.stroke()
+        context.fill()
       }
 
       requestAnimationFrame(renderPlayers)
@@ -487,6 +495,7 @@ export default function Home() {
     saveButton.addEventListener('click', () => {
       if(valueInput.trim() !== '' && isDrawFinished) {
         socket?.emit('newRoom', {
+          companyId: 'company1',
           roomId: valueInput,
           positions: rooms
         })
