@@ -33,4 +33,15 @@ type PlayerAPI = {
   }
 }
 
-export type { Players, MouseEventProps, CreateMapArgs, PlayerAPI }
+type Mode = 'createRoom' | 'normal'
+
+type Rooms = {
+  [roomId: string]: {
+    positions: { 
+        x: number, 
+        y: number 
+    }[]
+  }
+}
+
+export type { Players, MouseEventProps, CreateMapArgs, PlayerAPI, Mode, Rooms }
