@@ -2,24 +2,8 @@
 
 import { useEffect, useMemo } from 'react'
 import { useSocket } from '../hook/useSocket'
-import { CreateMapArgs, MouseEventProps, PlayerAPI, Players, Rooms } from '../interfaces/Data'
+import { CreateMapArgs, Line, MouseDownPos, MouseEventProps, PlayerAPI, Players, Rooms } from '../interfaces/Data'
 import styles from '../styles/Home.module.css'
-
-type MouseDownPos = {
-  x: number
-  y: number
-}
-
-type Line = {
-  start: {
-      x: number
-      y: number
-  }
-  end: {
-      x: number
-      y: number
-  }
-}
 
 const PLAYER_COLOR = '#7986CB'
 const PLAYER_COLOR_HOVER = '#9FA8DA'
@@ -61,7 +45,7 @@ export default function Home() {
       })
 
       socket.on('move', (data: PlayerAPI) => {
-        function movementListener(movement: any) {
+        function movementListener(movement: { tag: string, x: number, y: number }) {
           if(playersRendered) {
             playersRendered[movement.tag] = {
               x: movement.x,
@@ -77,14 +61,12 @@ export default function Home() {
         movementListener({ tag: data.id, x: data.position.x, y: data.position.y })
       })
 
-      socket.on('bounds', data => {
-        function newRoomListener(room: any) {
+      socket.on('bounds', (data: { roomId: string, positions: { x: number, y: number }[] }) => {
+        function newRoomListener(room: { roomId: string, positions: { x: number, y: number }[] }) {
           roomsRendered[room.roomId] = {
             positions: room.positions
           }
         }
-
-        console.log(roomsRendered)
 
         newRoomListener(data)
       })

@@ -44,4 +44,20 @@ type Rooms = {
   }
 }
 
-export type { Players, MouseEventProps, CreateMapArgs, PlayerAPI, Mode, Rooms }
+type MouseDownPos = {
+  x: number
+  y: number
+}
+
+type Line = {
+  start: {
+      x: number
+      y: number
+  }
+  end: {
+      x: number
+      y: number
+  }
+}
+
+export type { Players, MouseEventProps, CreateMapArgs, PlayerAPI, Mode, Rooms, MouseDownPos, Line }
